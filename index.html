@@ -3,24 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HausaufgabenHeld – Belohnungssystem</title>
+<title>Hausaufgabensystem – Belohnungssystem</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
-<!-- ============================================================
-  FIREBASE SDK
-  Diese 3 Zeilen laden Firebase automatisch aus dem Internet.
-  Du musst hier NICHTS ändern.
-============================================================ -->
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, remove, push }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-// ============================================================
-//  ⚠️  HIER DEINE FIREBASE-KONFIGURATION EINTRAGEN  ⚠️
-//  (Schritt 5 in der Anleitung erklärt, wo du diese Werte findest)
-// ============================================================
+
 const firebaseConfig = {
     apiKey: "AIzaSyCtMbp22HvHDWSUhgw94HZGhGQxuHGg0Ec",
     authDomain: "hausaufgaben-held.firebaseapp.com",
@@ -31,7 +24,7 @@ const firebaseConfig = {
     appId: "1:309536826889:web:a1133122779e6903aa3ad8"
   
 };
-// ============================================================
+
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
@@ -310,10 +303,6 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     </div>
     <div class="login-error" id="login-error">❌ Ungültige Anmeldedaten.</div>
     <button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="doLogin()">Anmelden</button>
-    <div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:10px;font-size:12px;color:var(--text-muted);">
-      <b>Lehrer-Login:</b> <code>lehrer</code> / <code>lehrer123</code><br>
-      Schüler-Accounts werden vom Lehrer angelegt.
-    </div>
   </div>
 </div>
 
@@ -392,7 +381,20 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     <div class="gap-12 mb-20"><div><div class="stat-val" id="class-points-display2">0</div><div class="text-muted" style="font-size:12px;">Klassenpunkte (kumuliert)</div></div></div>
     <div class="milestone-path" id="milestone-path"><div class="milestone-connector"></div></div>
   </div>
-
+<div class="card mb-20">
+  <div class="card-title">🔐 Lehrer-Passwort ändern</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <div class="form-group" style="margin-bottom:0;flex:1;min-width:180px;">
+      <label class="form-label">Neues Passwort</label>
+      <input type="password" class="form-input" id="new-teacher-pw" placeholder="Neues Passwort eingeben">
+    </div>
+    <div class="form-group" style="margin-bottom:0;flex:1;min-width:180px;">
+      <label class="form-label">Wiederholen</label>
+      <input type="password" class="form-input" id="new-teacher-pw2" placeholder="Passwort wiederholen">
+    </div>
+    <button class="btn btn-secondary" onclick="changeTeacherPassword()">🔐 Ändern</button>
+  </div>
+</div>
   <div class="admin-section-title">⚙️ Verwalten</div>
   <div class="grid-2 mb-20">
     <div class="card">
@@ -447,9 +449,8 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     <div id="sp-compare-msg" style="margin-top:10px;font-size:13px;color:var(--text-muted);"></div>
   </div>
 
-  <div class="grid-2 mb-20">
+  <div class="mb-20">
     <div class="card"><div class="card-title">📅 Letzte Aktivitäten</div><div id="sp-log"></div></div>
-    <div class="card"><div class="card-title">⏭ Nächste Belohnung</div><div id="sp-next-reward"></div></div>
   </div>
 
   <div class="card mb-20"><div class="card-title">🎁 Belohnungen einlösen</div><div class="reward-grid" id="sp-reward-grid"></div></div>
@@ -509,24 +510,8 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 <div id="toast"><span id="toast-icon">✅</span><span id="toast-msg">Gespeichert!</span></div>
 
 <script>
-// ============================================================
-// WARTEN BIS FIREBASE GELADEN IST
-// ============================================================
-function waitForFirebase(cb) {
-  if (window._fbReady) { cb(); return; }
-  window.addEventListener('firebase-ready', cb, { once: true });
-  // Timeout: wenn Firebase nach 8 Sek. nicht antwortet → Konfig-Fehler zeigen
-  setTimeout(() => {
-    if (!window._fbReady) {
-      document.getElementById('loading-overlay').style.display = 'none';
-      document.getElementById('config-warning').style.display = 'flex';
-    }
-  }, 8000);
-}
 
-// ============================================================
-// RANKS
-// ============================================================
+
 const RANKS = [
   { name:'Holz',   min:0,   max:9,   cls:'rank-holz',   icon:'🪵' },
   { name:'Stein',  min:10,  max:19,  cls:'rank-stein',  icon:'🪨' },
@@ -539,11 +524,9 @@ const RANKS = [
 function getRank(points) { return RANKS.find(r => points >= r.min && points <= r.max) || RANKS[0]; }
 function getRankBadgeHTML(points) { const r = getRank(points); return `<span class="rank-badge ${r.cls}">${r.icon} ${r.name}</span>`; }
 
-// ============================================================
-// LOCAL STATE (wird von Firebase befüllt und aktuell gehalten)
-// ============================================================
+
 let state = {
-  students: [],       // Array (aus Firebase-Objekt konvertiert)
+  students: [],       
   rewards: [],
   hwStatus: {},
   classPointsTotal: 0,
@@ -554,9 +537,6 @@ let state = {
   currentUser: null,
 };
 
-// ============================================================
-// FIREBASE HELFER
-// ============================================================
 function fb() { return window._fb; }
 
 async function fbSet(path, value) {
@@ -567,6 +547,29 @@ async function fbSet(path, value) {
 async function fbUpdate(path, value) {
   setSyncing(true);
   await fb().update(fb().ref(fb().db, path), value);
+  setSyncing(false);
+}
+async function fbUpdateRoot(updates) {
+  setSyncing(true);
+  // Gruppiere Updates nach Toplevel-Pfad und führe sie einzeln aus
+  const grouped = {};
+  for (const [fullKey, val] of Object.entries(updates)) {
+    const top = fullKey.split('/')[0];
+    if (!grouped[top]) grouped[top] = {};
+    const subKey = fullKey.slice(top.length + 1) || top;
+    if (fullKey.includes('/')) {
+      grouped[top][fullKey.slice(top.length + 1)] = val;
+    } else {
+      grouped[top] = val;
+    }
+  }
+  for (const [topPath, topVal] of Object.entries(grouped)) {
+    if (typeof topVal === 'object' && topVal !== null && !Array.isArray(topVal)) {
+      await fb().update(fb().ref(fb().db, topPath), topVal);
+    } else {
+      await fb().set(fb().ref(fb().db, topPath), topVal);
+    }
+  }
   setSyncing(false);
 }
 async function fbRemove(path) {
@@ -581,11 +584,7 @@ function setSyncing(active) {
   dot.className = active ? 'sync-dot syncing' : 'sync-dot';
 }
 
-// ============================================================
-// ECHTZEIT-LISTENER (Das Herzstück der Firebase-Integration)
-// Jede Änderung in der Datenbank löst sofort ein Re-Render aus
-// auf ALLEN Geräten, die gerade die Seite offen haben.
-// ============================================================
+
 function startRealtimeListeners() {
   const { db, ref, onValue } = fb();
 
@@ -631,13 +630,23 @@ function reRender() {
 // ============================================================
 // LOGIN / LOGOUT
 // ============================================================
+
+let TEACHER_PASSWORD = 'lehrer123';
+
+async function loadTeacherPassword() {
+  try {
+    const snap = await fb().get(fb().ref(fb().db, 'meta/teacherPassword'));
+    if (snap.val()) TEACHER_PASSWORD = snap.val();
+  } catch(e) {}
+}
+
 async function doLogin() {
   const u = document.getElementById('login-user').value.trim();
   const p = document.getElementById('login-pass').value;
   const err = document.getElementById('login-error');
   err.style.display = 'none';
 
-  if (u === 'lehrer' && p === 'lehrer123') {
+	if (u === 'lehrer' && p === TEACHER_PASSWORD) {
     state.currentUser = { username: u, role: 'teacher', name: 'Lehrkraft' };
     startApp();
     return;
@@ -685,22 +694,32 @@ function startApp() {
 // ============================================================
 // INIT
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
+async function initApp() {
   const d = document.getElementById('hw-date');
   d.value = today();
   d.addEventListener('change', renderHWCheck);
 
-  waitForFirebase(() => {
-    // Prüfen ob Config noch Platzhalter enthält
-    if (!window._fb) {
-      document.getElementById('loading-overlay').style.display = 'none';
-      document.getElementById('config-warning').style.display = 'flex';
-      return;
-    }
-    startRealtimeListeners();
-    document.getElementById('loading-overlay').style.display = 'none';
-    document.getElementById('login-screen').classList.add('visible');
+  // Warte bis Firebase bereit ist (max. 10 Sekunden)
+  const ready = await new Promise((resolve) => {
+    if (window._fbReady) { resolve(true); return; }
+    window.addEventListener('firebase-ready', () => resolve(true), { once: true });
+    setTimeout(() => resolve(false), 10000);
   });
+
+  if (!ready || !window._fb) {
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('config-warning').style.display = 'flex';
+    return;
+  }
+
+  await loadTeacherPassword();
+  startRealtimeListeners();
+  document.getElementById('loading-overlay').style.display = 'none';
+  document.getElementById('login-screen').classList.add('visible');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initApp().catch(e => console.error('App-Init Fehler:', e));
 });
 
 function today() { return new Date().toISOString().split('T')[0]; }
@@ -754,46 +773,20 @@ function updateClassMeter() {
 
   const statusEl = document.getElementById('class-bonus-status');
   const timerContainer = document.getElementById('timer-box-container');
-  const scheduled = state.classBonusScheduled[d];
+  const awarded = state.classBonusScheduled[d]?.awarded;
 
-  if (pct >= 90 && !scheduled) {
-    statusEl.innerHTML = `<button class="btn btn-primary btn-sm" onclick="scheduleClassBonus('${d}')">🎉 90% erreicht – Bonus starten!</button>`;
-    timerContainer.innerHTML = '';
-  } else if (scheduled && !scheduled.awarded) {
-    statusEl.innerHTML = `<span style="color:var(--green);font-weight:700;">⏳ Bonus läuft…</span>`;
-    renderTimer(d, scheduled.scheduledAt);
-  } else if (scheduled && scheduled.awarded) {
-    statusEl.innerHTML = `<span style="color:var(--green);font-weight:700;">✅ Bonus ausgezahlt!</span>`;
-    timerContainer.innerHTML = '';
+  if (pct >= 90 && !awarded) {
+    statusEl.innerHTML = `<button class="btn btn-primary btn-sm" onclick="awardClassBonus('${d}')">🎉 90% erreicht – Bonus jetzt auszahlen!</button>`;
+  } else if (awarded) {
+    statusEl.innerHTML = `<span style="color:var(--green);font-weight:700;">✅ Klassenbonus heute bereits ausgezahlt!</span>`;
     document.getElementById('class-meter-fill').style.background = 'linear-gradient(90deg,#F5B700,#27AE60)';
   } else {
     statusEl.innerHTML = '';
-    timerContainer.innerHTML = '';
   }
-}
-
-let timerInterval = null;
-function renderTimer(date, scheduledAt) {
-  const tc = document.getElementById('timer-box-container');
-  function tick() {
-    const rem = Math.max(0, (scheduledAt + 3600000) - Date.now());
-    if (rem === 0) { clearInterval(timerInterval); awardClassBonus(date); return; }
-    const mm = Math.floor(rem/60000), ss = Math.floor((rem%60000)/1000);
-    tc.innerHTML = `<div class="timer-box">⏳ Klassenbonus wird ausgezahlt in: <span class="timer-countdown">${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}</span></div>`;
-  }
-  if (timerInterval) clearInterval(timerInterval);
-  tick();
-  timerInterval = setInterval(tick, 1000);
-}
-
-async function scheduleClassBonus(date) {
-  const scheduledAt = Date.now();
-  await fbUpdate('meta', { [`classBonusScheduled/${date}`]: { scheduledAt, awarded: false } });
-  showToast('⏳ Klassenbonus gestartet! Auszahlung in 1 Stunde.', 'info');
+  timerContainer.innerHTML = '';
 }
 
 async function awardClassBonus(date) {
-  // Schüler alle +1
   const updates = {};
   state.students.forEach(s => {
     updates[`students/${s.id}/points`] = (s.points || 0) + 1;
@@ -802,8 +795,8 @@ async function awardClassBonus(date) {
   });
   updates['meta/classPointsTotal'] = state.classPointsTotal + state.classBonus;
   updates['meta/classStreak'] = (state.classStreak || 0) + 1;
-  updates[`meta/classBonusScheduled/${date}/awarded`] = true;
-  await fbUpdate('', updates);
+  updates[`meta/classBonusScheduled/${date}`] = { awarded: true };
+  await fbUpdateRoot(updates);
   showToast(`🎉 Klassenbonus ausgezahlt! +${state.classBonus} Klassenpunkte & alle Schüler +1!`, 'success');
 }
 
@@ -886,7 +879,7 @@ async function markHW(studentId, newStatus) {
     showToast(`✅ ${student.first} +${bonus} Punkt${bonus>1?'e':''}${streakMsg}`, 'success');
   }
 
-  if (Object.keys(updates).length) await fbUpdate('', updates);
+  if (Object.keys(updates).length) await fbUpdateRoot(updates);
 }
 
 // ============================================================
@@ -998,6 +991,17 @@ async function doAdjustPoints() {
   await fbUpdate(`students/${adjustTargetId}`, { points:newPoints, log });
   showToast(`${delta>0?'⬆️':'⬇️'} ${s.first}: ${delta>0?'+':''}${delta} Punkte`,'info');
   closeModal('modal-adjust-points');
+}
+async function changeTeacherPassword() {
+  const pw1 = document.getElementById('new-teacher-pw').value;
+  const pw2 = document.getElementById('new-teacher-pw2').value;
+  if (!pw1 || pw1.length < 4) { showToast('❗ Passwort muss mindestens 4 Zeichen haben.', 'error'); return; }
+  if (pw1 !== pw2) { showToast('❗ Passwörter stimmen nicht überein.', 'error'); return; }
+  await fbSet('meta/teacherPassword', pw1);
+  TEACHER_PASSWORD = pw1;
+  document.getElementById('new-teacher-pw').value = '';
+  document.getElementById('new-teacher-pw2').value = '';
+  showToast('✅ Lehrer-Passwort wurde geändert!', 'success');
 }
 async function removeStudent(id) {
   if (!confirm('Schüler wirklich entfernen?')) return;
@@ -1155,14 +1159,6 @@ function renderStudentView() {
     else log.slice(0,8).forEach(l=>{ logEl.innerHTML+=`<div class="log-entry"><span class="log-icon">${l.pts>0?'⬆️':'⬇️'}</span><div class="log-text">${l.text}</div><span class="log-pts ${l.pts>0?'positive':'negative'}">${l.pts>0?'+':''}${l.pts}</span><span class="log-date">${formatDate(l.date)}</span></div>`; });
   }
 
-  const nextEl=document.getElementById('sp-next-reward');
-  if (nextEl) {
-    const indiv=state.rewards.filter(r=>r.type==='individual').sort((a,b)=>a.cost-b.cost);
-    const next=indiv.find(r=>r.cost>(s.points||0));
-    if(next) { const pct=Math.min(100,((s.points||0)/next.cost)*100); nextEl.innerHTML=`<div style="text-align:center;padding:12px;"><div style="font-size:40px;">${next.icon}</div><div style="font-weight:700;margin:8px 0;">${next.name}</div><div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">${next.desc}</div><div class="reward-cost" style="margin-bottom:10px;">${next.cost} ⭐</div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div style="font-size:11px;color:var(--text-muted);margin-top:6px;">${pct.toFixed(0)}% – Noch ${next.cost-(s.points||0)} Punkte</div></div>`; }
-    else nextEl.innerHTML='<div style="text-align:center;padding:20px;font-size:24px;">🎉<br><b>Alle Belohnungen erreichbar!</b></div>';
-  }
-
   const rg=document.getElementById('sp-reward-grid');
   if (rg) {
     rg.innerHTML='';
@@ -1170,6 +1166,9 @@ function renderStudentView() {
       const canAfford=(s.points||0)>=r.cost;
       rg.innerHTML+=`<div class="reward-card" style="${!canAfford?'opacity:0.55':''}"><div class="reward-icon">${r.icon}</div><div class="reward-name">${r.name}</div><div class="reward-desc">${r.desc}</div><div class="reward-cost">${r.cost} ⭐</div><button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px;" ${!canAfford?'disabled':''} onclick="redeemStudentReward('${sid}','${r.id}')">${canAfford?'🎁 Einlösen':`Noch ${r.cost-(s.points||0)} fehlen`}</button></div>`;
     });
+    if(!state.rewards.filter(r=>r.type==='individual').length) {
+      rg.innerHTML='<div class="text-muted">Noch keine Belohnungen verfügbar.</div>';
+    }
   }
 
   renderMilestonePath('sp-milestone-path',false);
@@ -1185,7 +1184,7 @@ async function redeemStudentReward(studentId, rewardId) {
   const updates={};
   updates[`students/${studentId}/points`]=(s.points||0)-r.cost;
   updates[`students/${studentId}/log`]=log;
-  await fbUpdate('',updates);
+  await fbUpdateRoot(updates);
   const logRef=fb().push(fb().ref(fb().db,'redeemLog'));
   await fb().set(logRef,{ studentName:`${s.first} ${s.last}`, rewardName:r.name, rewardIcon:r.icon, date:today() });
   showToast(`🎁 "${r.icon} ${r.name}" eingelöst!`,'success');
@@ -1206,7 +1205,7 @@ async function loadMotivation() {
   try {
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000,
+      body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000,
         messages:[{ role:'user', content:`Schreibe einen kurzen, herzlichen Mutmachspruch auf Deutsch für einen Schüler namens ${name} (Rang: ${rank}, Streak: ${streak} Tage), der motiviert werden soll, seine Hausaufgaben regelmäßig zu machen. Der Spruch soll persönlich, positiv und ermutigend sein, ca. 2-3 Sätze lang. Gib NUR den Spruch zurück, ohne Anführungszeichen oder Einleitungstext.` }]
       })
     });
