@@ -12,32 +12,24 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, remove, push }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential,
-  EmailAuthProvider }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCtMbp22HvHDWSUhgw94HZGhGQxuHGg0Ec",
-    authDomain: "hausaufgaben-held.firebaseapp.com",
-    databaseURL: "https://hausaufgaben-held-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "hausaufgaben-held",
-    storageBucket: "hausaufgaben-held.firebasestorage.app",
-    messagingSenderId: "309536826889",
-    appId: "1:309536826889:web:a1133122779e6903aa3ad8"
-  
+ apiKey: "AIzaSyCtMbp22HvHDWSUhgw94HZGhGQxuHGg0Ec",
+  authDomain: "hausaufgaben-held.firebaseapp.com",
+  databaseURL: "https://hausaufgaben-held-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "hausaufgaben-held",
+  storageBucket: "hausaufgaben-held.firebasestorage.app",
+  messagingSenderId: "309536826889",
+  appId: "1:309536826889:web:a1133122779e6903aa3ad8"
 };
 
 
 const app = initializeApp(firebaseConfig);
-const db   = getDatabase(app);
-const auth = getAuth(app);
+const db  = getDatabase(app);
 
 // Globale Hilfsfunktionen, die der Rest der Seite verwenden kann
-window._fb = { db, ref, set, get, onValue, update, remove, push, auth,
-  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
-  onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider };
+window._fb = { db, ref, set, get, onValue, update, remove, push };
 window._fbReady = true;
 window.dispatchEvent(new Event('firebase-ready'));
 </script>
@@ -282,13 +274,11 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
   <div class="loading-sub">Verbindung zu Firebase…</div>
 </div>
 
-<!-- CONFIG WARNING (erscheint wenn Firebase nicht konfiguriert ist) -->
+<!-- CONFIG WARNING -->
 <div id="config-warning">
   <div class="config-box">
     <h2>⚠️ Firebase nicht konfiguriert</h2>
-    <p style="margin-bottom:12px;">Du hast noch keine Firebase-Zugangsdaten eingetragen.<br>
-    Öffne die HTML-Datei in einem Texteditor und ersetze die Platzhalter im Abschnitt <code>firebaseConfig</code> (ganz oben im Script-Tag).</p>
-    <p>Die genauen Schritte findest du in der beigelegten <b>Anleitung</b>.</p>
+   Ey du hohlbirne, Firebase muss noch konfiguriert werden
   </div>
 </div>
 
@@ -301,14 +291,14 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
       <div class="logo-sub">Belohnungssystem für Klassen</div>
     </div>
     <div class="form-group">
-      <label class="form-label">E-Mail-Adresse</label>
-      <input type="email" class="form-input" id="login-user" placeholder="z.B. name@schule.de" autocomplete="email">
+      <label class="form-label">Benutzername</label>
+      <input type="text" class="form-input" id="login-user" placeholder="Benutzername" autocomplete="username">
     </div>
     <div class="form-group">
       <label class="form-label">Passwort</label>
       <input type="password" class="form-input" id="login-pass" placeholder="Passwort" autocomplete="current-password">
     </div>
-    <div class="login-error" id="login-error">❌ Ungültige Anmeldedaten. Bitte E-Mail und Passwort prüfen.</div>
+    <div class="login-error" id="login-error">❌ Ungültige Anmeldedaten.</div>
     <button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="doLogin()">Anmelden</button>
   </div>
 </div>
@@ -335,11 +325,13 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 
 <!-- LEHRER-ANSICHT -->
 <div id="view-teacher" class="view">
-  <div class="grid-4 mb-20">
+  <div class="grid-4 mb-20" style="grid-template-columns:repeat(3,1fr);gap:16px;">
     <div class="stat-box"><div class="stat-icon">👥</div><div><div class="stat-val" id="stat-students">0</div><div class="stat-label">Schüler gesamt</div></div></div>
     <div class="stat-box" style="border-left-color:var(--green)"><div class="stat-icon">✅</div><div><div class="stat-val" id="stat-today-done">0</div><div class="stat-label">Heute erledigt</div></div></div>
     <div class="stat-box" style="border-left-color:#FF6B35"><div class="stat-icon">🔥</div><div><div class="stat-val" id="stat-class-streak">0</div><div class="stat-label">Klassen-Streak</div></div></div>
     <div class="stat-box" style="border-left-color:var(--blue-soft)"><div class="stat-icon">🏫</div><div><div class="stat-val" id="stat-class-pts">0</div><div class="stat-label">Klassenpunkte</div></div></div>
+    <div class="stat-box" style="border-left-color:var(--green)"><div class="stat-icon">📚</div><div><div class="stat-val" id="stat-total-done">0</div><div class="stat-label">HA gesamt abgegeben</div></div></div>
+    <div class="stat-box" style="border-left-color:var(--red)"><div class="stat-icon">❌</div><div><div class="stat-val" id="stat-total-missing">0</div><div class="stat-label">HA gesamt gefehlt</div></div></div>
   </div>
 
   <div class="class-meter mb-20">
@@ -364,6 +356,7 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
       <div class="gap-12">
         <input type="text" class="hw-search" id="hw-search" placeholder="🔍 Schüler suchen…" oninput="renderHWCheck()">
         <input type="date" class="form-input" id="hw-date" style="width:auto">
+        <button class="btn btn-ghost btn-sm" onclick="setToday()" title="Auf heute zurücksetzen">📅 Heute</button>
       </div>
     </div>
     <div class="hw-check-grid" id="hw-check-grid"></div>
@@ -403,6 +396,41 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
   </div>
 </div>
   <div class="admin-section-title">⚙️ Verwalten</div>
+
+  <!-- SYSTEMEINSTELLUNGEN -->
+  <div class="card mb-20">
+    <div class="card-title">🎛️ Systemeinstellungen</div>
+    <div class="grid-2" style="gap:16px;">
+
+      <div>
+        <div class="form-label">🏫 Klassenpunkte pro Bonus</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="number" class="form-input" id="setting-class-bonus" min="0" style="width:100px;" placeholder="5">
+          <button class="btn btn-primary btn-sm" onclick="saveSetting('classBonus','setting-class-bonus',true)">Speichern</button>
+        </div>
+        <div class="text-muted" style="margin-top:4px;">Klassenpunkte die die Klasse beim 90%-Bonus erhält</div>
+      </div>
+
+      <div>
+        <div class="form-label">🎁 Schülerpunkte pro Klassenbonus</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="number" class="form-input" id="setting-student-bonus" min="0" style="width:100px;" placeholder="0">
+          <button class="btn btn-primary btn-sm" onclick="saveSetting('classStudentBonus','setting-student-bonus',true)">Speichern</button>
+        </div>
+        <div class="text-muted" style="margin-top:4px;">Punkte die jeder Schüler beim Klassenbonus bekommt (Standard: 0)</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RÄNGE BEARBEITEN -->
+  <div class="card mb-20">
+    <div class="card-title">🏅 Ränge bearbeiten</div>
+    <div class="text-muted mb-12">Ändere Name, Emoji und Mindestpunktzahl jedes Rangs. Der Maximalwert wird automatisch berechnet.</div>
+    <div id="rank-editor"></div>
+    <button class="btn btn-primary" style="margin-top:12px;" onclick="saveRanks()">💾 Alle Ränge speichern</button>
+  </div>
+
   <div class="grid-2 mb-20">
     <div class="card">
       <div class="card-title">👤 Schüler verwalten</div>
@@ -478,14 +506,10 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     <div class="modal-title">👤 Schüler hinzufügen</div>
     <div class="form-group"><label class="form-label">Vorname</label><input type="text" class="form-input" id="new-student-first" placeholder="Vorname"></div>
     <div class="form-group"><label class="form-label">Nachname</label><input type="text" class="form-input" id="new-student-last" placeholder="Nachname"></div>
-    <div class="form-group"><label class="form-label">E-Mail-Adresse (Login)</label><input type="email" class="form-input" id="new-student-email" placeholder="z.B. anna.mueller@schule.de"></div>
-    <div class="form-group"><label class="form-label">Passwort (mind. 6 Zeichen)</label><input type="text" class="form-input" id="new-student-password" placeholder="Passwort für den Schüler"></div>
-    <div style="background:var(--bg);border-radius:10px;padding:12px;font-size:12px;color:var(--text-muted);margin-bottom:12px;">
-      💡 Tipp: Falls der Schüler keine Schul-E-Mail hat, einfach erfinden:<br>
-      <b>vorname.nachname@hausaufgabenheld.de</b>
-    </div>
+    <div class="form-group"><label class="form-label">Benutzername (Login)</label><input type="text" class="form-input" id="new-student-username" placeholder="z.B. anna.mueller"></div>
+    <div class="form-group"><label class="form-label">Passwort</label><input type="text" class="form-input" id="new-student-password" placeholder="Passwort für den Schüler"></div>
     <div class="gap-12 mt-20">
-      <button class="btn btn-primary" id="add-student-btn" onclick="addStudent()">Hinzufügen</button>
+      <button class="btn btn-primary" onclick="addStudent()">Hinzufügen</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-add-student')">Abbrechen</button>
     </div>
   </div>
@@ -523,7 +547,8 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 <script>
 
 
-const RANKS = [
+// Standard-Ränge (werden aus Firebase überschrieben wenn dort gespeichert)
+let RANKS = [
   { name:'Holz',   min:0,   max:9,   cls:'rank-holz',   icon:'🪵' },
   { name:'Stein',  min:10,  max:19,  cls:'rank-stein',  icon:'🪨' },
   { name:'Kupfer', min:20,  max:34,  cls:'rank-kupfer', icon:'🟤' },
@@ -532,16 +557,20 @@ const RANKS = [
   { name:'Gold',   min:75,  max:99,  cls:'rank-gold',   icon:'🥇' },
   { name:'Platin', min:100, max:Infinity, cls:'rank-platin', icon:'💎' },
 ];
-function getRank(points) { return RANKS.find(r => points >= r.min && points <= r.max) || RANKS[0]; }
+function getRank(points) {
+  const sorted = [...RANKS].sort((a,b) => a.min - b.min);
+  return sorted.slice().reverse().find(r => points >= r.min) || sorted[0];
+}
 function getRankBadgeHTML(points) { const r = getRank(points); return `<span class="rank-badge ${r.cls}">${r.icon} ${r.name}</span>`; }
 
 
 let state = {
-  students: [],       
+  students: [],
   rewards: [],
   hwStatus: {},
   classPointsTotal: 0,
   classBonus: 5,
+  classStudentBonus: 0,   // Punkte pro Schüler beim Klassenbonus (Standard: 0 → jeder bekommt 0 extra)
   classBonusScheduled: {},
   classStreak: 0,
   redeemLog: [],
@@ -618,10 +647,15 @@ function startRealtimeListeners() {
 
   onValue(ref(db, 'meta'), snap => {
     const m = snap.val() || {};
-    state.classPointsTotal      = m.classPointsTotal      || 0;
-    state.classBonus            = m.classBonus            || 5;
-    state.classBonusScheduled   = m.classBonusScheduled   || {};
-    state.classStreak           = m.classStreak           || 0;
+    state.classPointsTotal    = m.classPointsTotal    || 0;
+    state.classBonus          = m.classBonus          || 5;
+    state.classStudentBonus   = m.classStudentBonus   !== undefined ? m.classStudentBonus : 0;
+    state.classBonusScheduled = m.classBonusScheduled || {};
+    state.classStreak         = m.classStreak         || 0;
+    // Ränge aus Firebase laden falls vorhanden
+    if (m.ranks && Array.isArray(m.ranks)) {
+      RANKS = m.ranks.map((r,i) => ({ ...r, max: i < m.ranks.length-1 ? m.ranks[i+1].min-1 : Infinity }));
+    }
     reRender();
   });
 
@@ -642,57 +676,41 @@ function reRender() {
 // LOGIN / LOGOUT
 // ============================================================
 
-// ============================================================
-// FIREBASE AUTH LOGIN / LOGOUT
-// ============================================================
+let TEACHER_PASSWORD = 'lehrer123';
 
-// Lehrer E-Mail — hier deine Lehrer-E-Mail eintragen (muss in Firebase Auth angelegt sein)
-const TEACHER_EMAIL = 'lehrer@hausaufgabenheld.de';
+async function loadTeacherPassword() {
+  try {
+    const snap = await fb().get(fb().ref(fb().db, 'meta/teacherPassword'));
+    if (snap.val()) TEACHER_PASSWORD = snap.val();
+  } catch(e) {}
+}
 
 async function doLogin() {
-  const email = document.getElementById('login-user').value.trim();
-  const pass  = document.getElementById('login-pass').value;
-  const err   = document.getElementById('login-error');
-  const btn   = document.querySelector('#login-screen .btn-primary');
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
   err.style.display = 'none';
-  btn.textContent = 'Anmelden…';
-  btn.disabled = true;
 
-  try {
-    const cred = await fb().signInWithEmailAndPassword(fb().auth, email, pass);
-    const uid  = cred.user.uid;
-
-    // Prüfen ob Lehrer
-    if (email === TEACHER_EMAIL) {
-      state.currentUser = { uid, email, role: 'teacher', name: 'Lehrkraft' };
-      startApp();
-    } else {
-      // Schüler suchen anhand der gespeicherten E-Mail
-      const student = state.students.find(s => s.email === email);
-      if (student) {
-        state.currentUser = { uid, email, role: 'student', name: `${student.first} ${student.last}`, studentId: student.id };
-        startApp();
-      } else {
-        // Eingeloggt aber kein Schüler-Eintrag gefunden
-        await fb().signOut(fb().auth);
-        err.textContent = '❌ Kein Schüler-Account gefunden. Bitte den Lehrer kontaktieren.';
-        err.style.display = 'block';
-      }
-    }
-  } catch(e) {
-    err.textContent = '❌ Ungültige E-Mail oder falsches Passwort.';
-    err.style.display = 'block';
+	if (u === 'lehrer' && p === TEACHER_PASSWORD) {
+    state.currentUser = { username: u, role: 'teacher', name: 'Lehrkraft' };
+    startApp();
+    return;
   }
-  btn.textContent = 'Anmelden';
-  btn.disabled = false;
+  // Schüler-Login: gegen Firebase prüfen
+  const student = state.students.find(s => s.username === u && s.password === p);
+  if (student) {
+    state.currentUser = { username: u, role: 'student', name: `${student.first} ${student.last}`, studentId: student.id };
+    startApp();
+    return;
+  }
+  err.style.display = 'block';
 }
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('login-screen').classList.contains('visible')) doLogin();
 });
 
-async function doLogout() {
-  await fb().signOut(fb().auth);
+function doLogout() {
   state.currentUser = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').classList.add('visible');
@@ -724,7 +742,7 @@ function startApp() {
 async function initApp() {
   const d = document.getElementById('hw-date');
   d.value = today();
-  d.addEventListener('change', renderHWCheck);
+  d.addEventListener('change', () => { renderHWCheck(); renderStats(); });
 
   // Warte bis Firebase bereit ist (max. 10 Sekunden)
   const ready = await new Promise((resolve) => {
@@ -739,6 +757,7 @@ async function initApp() {
     return;
   }
 
+  await loadTeacherPassword();
   startRealtimeListeners();
   document.getElementById('loading-overlay').style.display = 'none';
   document.getElementById('login-screen').classList.add('visible');
@@ -765,6 +784,8 @@ function render() {
   renderRedeemLog();
   updateClassMeter();
   renderCharts();
+  renderRankEditor();
+  populateSettingInputs();
 }
 
 function renderStats() {
@@ -777,7 +798,21 @@ function renderStats() {
   document.getElementById('stat-today-done').textContent = done;
   document.getElementById('stat-class-streak').textContent = state.classStreak;
   document.getElementById('stat-class-pts').textContent = state.classPointsTotal;
-  document.getElementById('class-points-display2').textContent = state.classPointsTotal;
+  if (document.getElementById('class-points-display2'))
+    document.getElementById('class-points-display2').textContent = state.classPointsTotal;
+
+  // Gesamt-HW Statistiken für alle Schüler
+  let totalDone = 0, totalMissing = 0;
+  Object.entries(state.hwStatus).forEach(([key, val]) => {
+    if (val === 'done') totalDone++;
+    else if (val === 'missing') totalMissing++;
+  });
+  // Alle nicht explizit gesetzten Einträge zählen als done (Standard)
+  // Wir zeigen nur explizit gesetzte Werte
+  if (document.getElementById('stat-total-done'))
+    document.getElementById('stat-total-done').textContent = totalDone;
+  if (document.getElementById('stat-total-missing'))
+    document.getElementById('stat-total-missing').textContent = totalMissing;
 }
 
 // ============================================================
@@ -814,16 +849,24 @@ function updateClassMeter() {
 
 async function awardClassBonus(date) {
   const updates = {};
+  const perStudent = state.classStudentBonus || 0;
   state.students.forEach(s => {
-    updates[`students/${s.id}/points`] = (s.points || 0) + 1;
+    const newPts = (s.points || 0) + perStudent;
+    updates[`students/${s.id}/points`] = newPts;
     const log = s.log || [];
-    updates[`students/${s.id}/log`] = [{ type:'class', pts:1, text:'Klassenbonus (90%+ Klasse)', date }, ...log];
+    const logEntry = perStudent > 0
+      ? { type:'class', pts:perStudent, text:`Klassenbonus (90%+ Klasse) +${perStudent}`, date }
+      : { type:'class', pts:0, text:'Klassenbonus: Klasse hat 90% erreicht!', date };
+    updates[`students/${s.id}/log`] = [logEntry, ...log];
   });
   updates['meta/classPointsTotal'] = state.classPointsTotal + state.classBonus;
   updates['meta/classStreak'] = (state.classStreak || 0) + 1;
   updates[`meta/classBonusScheduled/${date}`] = { awarded: true };
   await fbUpdateRoot(updates);
-  showToast(`🎉 Klassenbonus ausgezahlt! +${state.classBonus} Klassenpunkte & alle Schüler +1!`, 'success');
+  const msg = perStudent > 0
+    ? `🎉 Klassenbonus! +${state.classBonus} Klassenpunkte & alle Schüler +${perStudent}!`
+    : `🎉 Klassenbonus! +${state.classBonus} Klassenpunkte für die Klasse!`;
+  showToast(msg, 'success');
 }
 
 // ============================================================
@@ -975,6 +1018,71 @@ function renderCharts() {
 // ============================================================
 // STUDENT MANAGE
 // ============================================================
+// ============================================================
+// SYSTEMEINSTELLUNGEN
+// ============================================================
+function setToday() {
+  document.getElementById('hw-date').value = today();
+  renderHWCheck();
+}
+
+function populateSettingInputs() {
+  const cb = document.getElementById('setting-class-bonus');
+  const sb = document.getElementById('setting-student-bonus');
+  if (cb) cb.value = state.classBonus;
+  if (sb) sb.value = state.classStudentBonus !== undefined ? state.classStudentBonus : 0;
+}
+
+async function saveSetting(metaKey, inputId, isNumber) {
+  const val = document.getElementById(inputId).value;
+  const parsed = isNumber ? parseInt(val) : val;
+  if (isNaN(parsed) && isNumber) { showToast('❗ Ungültiger Wert.', 'error'); return; }
+  await fbUpdate('meta', { [metaKey]: parsed });
+  showToast('✅ Einstellung gespeichert!', 'success');
+}
+
+// ============================================================
+// RANG EDITOR
+// ============================================================
+function renderRankEditor() {
+  const el = document.getElementById('rank-editor');
+  if (!el) return;
+  el.innerHTML = '';
+  RANKS.forEach((r, i) => {
+    el.innerHTML += `
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;background:var(--bg);padding:10px;border-radius:10px;border:1px solid var(--border);">
+        <span class="rank-badge ${r.cls}" style="min-width:80px;justify-content:center;">${r.icon} ${r.name}</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Name</div>
+            <input type="text" class="form-input" id="rank-name-${i}" value="${r.name}" style="width:90px;padding:6px 10px;">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Emoji</div>
+            <input type="text" class="form-input" id="rank-icon-${i}" value="${r.icon}" style="width:60px;padding:6px 10px;" maxlength="4">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Ab Punkte</div>
+            <input type="number" class="form-input" id="rank-min-${i}" value="${r.min}" min="0" style="width:80px;padding:6px 10px;" ${i===0?'disabled':''}>
+          </div>
+        </div>
+      </div>`;
+  });
+}
+
+async function saveRanks() {
+  const newRanks = RANKS.map((r, i) => ({
+    name: document.getElementById(`rank-name-${i}`).value.trim() || r.name,
+    icon: document.getElementById(`rank-icon-${i}`).value.trim() || r.icon,
+    min:  i === 0 ? 0 : (parseInt(document.getElementById(`rank-min-${i}`).value) || r.min),
+    cls:  r.cls,
+  }));
+  // Sortieren nach min
+  newRanks.sort((a,b) => a.min - b.min);
+  await fbUpdate('meta', { ranks: newRanks });
+  showToast('✅ Ränge gespeichert!', 'success');
+}
+
 function renderStudentManage() {
   const list = document.getElementById('student-manage-list');
   if (!list) return;
@@ -984,8 +1092,9 @@ function renderStudentManage() {
     list.innerHTML += `<div class="log-entry" style="flex-wrap:wrap;gap:8px;">
       <div style="flex:1;min-width:120px;">
         <div style="font-weight:700;">${s.first} ${s.last}</div>
-        <div style="font-size:11px;color:var(--text-muted);">📧 ${s.email}</div>
+        <div style="font-size:11px;color:var(--text-muted);">📧 ${s.email || s.username || '—'}</div>
         <div style="font-size:11px;margin-top:2px;">${getRankBadgeHTML(s.points||0)} ${s.points||0} ⭐ | 🔥${s.streak||0}</div>
+        <div style="font-size:11px;margin-top:2px;color:var(--text-muted);">📚 HA abgegeben: <b style='color:#2ECC71'>${Object.entries(state.hwStatus).filter(([k,v])=>k.startsWith(s.id+'_')&&v==='done').length}</b> &nbsp;❌ gefehlt: <b style='color:#E74C3C'>${Object.entries(state.hwStatus).filter(([k,v])=>k.startsWith(s.id+'_')&&v==='missing').length}</b></div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="btn btn-green btn-sm" onclick="openAdjustModal('${s.id}',1)">+ Punkte</button>
@@ -1021,20 +1130,13 @@ async function doAdjustPoints() {
 async function changeTeacherPassword() {
   const pw1 = document.getElementById('new-teacher-pw').value;
   const pw2 = document.getElementById('new-teacher-pw2').value;
-  if (!pw1 || pw1.length < 6) { showToast('❗ Passwort muss mindestens 6 Zeichen haben.', 'error'); return; }
+  if (!pw1 || pw1.length < 4) { showToast('❗ Passwort muss mindestens 4 Zeichen haben.', 'error'); return; }
   if (pw1 !== pw2) { showToast('❗ Passwörter stimmen nicht überein.', 'error'); return; }
-  try {
-    await fb().updatePassword(fb().auth.currentUser, pw1);
-    document.getElementById('new-teacher-pw').value = '';
-    document.getElementById('new-teacher-pw2').value = '';
-    showToast('✅ Passwort erfolgreich geändert!', 'success');
-  } catch(e) {
-    if (e.code === 'auth/requires-recent-login') {
-      showToast('❗ Bitte erst abmelden und neu einloggen, dann Passwort ändern.', 'error');
-    } else {
-      showToast(`❗ Fehler: ${e.message}`, 'error');
-    }
-  }
+  await fbSet('meta/teacherPassword', pw1);
+  TEACHER_PASSWORD = pw1;
+  document.getElementById('new-teacher-pw').value = '';
+  document.getElementById('new-teacher-pw2').value = '';
+  showToast('✅ Lehrer-Passwort wurde geändert!', 'success');
 }
 async function removeStudent(id) {
   if (!confirm('Schüler wirklich entfernen?')) return;
@@ -1111,46 +1213,20 @@ function renderRedeemLog() {
 // ADD STUDENT / REWARD
 // ============================================================
 function openAddStudentModal() {
-  ['new-student-first','new-student-last','new-student-email','new-student-password'].forEach(id=>document.getElementById(id).value='');
+  ['new-student-first','new-student-last','new-student-username','new-student-password'].forEach(id=>document.getElementById(id).value='');
   openModal('modal-add-student');
 }
 async function addStudent() {
-  const first    = document.getElementById('new-student-first').value.trim();
-  const last     = document.getElementById('new-student-last').value.trim();
-  const email    = document.getElementById('new-student-email').value.trim().toLowerCase();
-  const password = document.getElementById('new-student-password').value.trim();
-  const btn      = document.getElementById('add-student-btn');
-
-  if (!first||!last||!email||!password) { showToast('❗ Bitte alle Felder ausfüllen.','error'); return; }
-  if (password.length < 6) { showToast('❗ Passwort muss mindestens 6 Zeichen haben.','error'); return; }
-  if (state.students.find(s=>s.email===email)) { showToast('❗ E-Mail bereits vergeben.','error'); return; }
-
-  btn.textContent = 'Wird angelegt…';
-  btn.disabled = true;
-
-  try {
-    // Firebase Auth Account erstellen
-    const cred = await fb().createUserWithEmailAndPassword(fb().auth, email, password);
-    const uid  = cred.user.uid;
-
-    // Direkt wieder als Lehrer einloggen (createUser loggt automatisch ein)
-    // Schüler-Daten in DB speichern — OHNE Passwort!
-    const newRef = fb().push(fb().ref(fb().db,'students'));
-    await fb().set(newRef, { first, last, email, uid, points:0, streak:0, log:[] });
-
-    // Lehrer wieder einloggen
-    showToast(`👤 ${first} ${last} erfolgreich angelegt! Bitte jetzt neu als Lehrer einloggen.`, 'success');
-    setTimeout(() => doLogout(), 2000);
-  } catch(e) {
-    if (e.code === 'auth/email-already-in-use') {
-      showToast('❗ Diese E-Mail ist bereits registriert.','error');
-    } else {
-      showToast(`❗ Fehler: ${e.message}`,'error');
-    }
-  }
-  btn.textContent = 'Hinzufügen';
-  btn.disabled = false;
+  const first=document.getElementById('new-student-first').value.trim();
+  const last=document.getElementById('new-student-last').value.trim();
+  const username=document.getElementById('new-student-username').value.trim();
+  const password=document.getElementById('new-student-password').value.trim();
+  if(!first||!last||!username||!password) { showToast('❗ Bitte alle Felder ausfüllen.','error'); return; }
+  if(state.students.find(s=>s.username===username)) { showToast('❗ Benutzername bereits vergeben.','error'); return; }
+  const newRef=fb().push(fb().ref(fb().db,'students'));
+  await fb().set(newRef, { first, last, username, password, points:0, streak:0, log:[] });
   closeModal('modal-add-student');
+  showToast(`👤 ${first} ${last} hinzugefügt!`,'success');
 }
 
 function openAddRewardModal() {
