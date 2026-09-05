@@ -158,6 +158,7 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 .rank-silber { background:#A8A9AD; }
 .rank-gold   { background:linear-gradient(90deg,#F5B700,#FFD84D); color:var(--navy); }
 .rank-platin { background:linear-gradient(90deg,#E5E4E2,#BFC1C2); color:var(--navy); }
+.rank-custom { color:white; }
 
 .streak-badge { display:inline-flex; align-items:center; gap:4px; background:linear-gradient(90deg,#FF6B35,#F5B700); color:white; font-size:11px; font-weight:700; padding:3px 8px; border-radius:20px; margin-top:6px; }
 .progress-bar { height:6px; background:var(--border); border-radius:3px; margin-top:10px; overflow:hidden; }
@@ -431,9 +432,12 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
   <!-- RÄNGE BEARBEITEN -->
   <div class="card mb-20">
     <div class="card-title">🏅 Ränge bearbeiten</div>
-    <div class="text-muted mb-12">Ändere Name, Emoji und Mindestpunktzahl jedes Rangs. Der Maximalwert wird automatisch berechnet.</div>
+    <div class="text-muted mb-12">Ändere Name, Emoji, Farbe und Mindestpunktzahl jedes Rangs. Der höchste Rang gilt ab seiner Mindestpunktzahl unbegrenzt.</div>
     <div id="rank-editor"></div>
-    <button class="btn btn-primary" style="margin-top:12px;" onclick="saveRanks()">💾 Alle Ränge speichern</button>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="saveRanks()">💾 Alle Ränge speichern</button>
+      <button class="btn btn-secondary" onclick="addNewRank()">➕ Neuen Rang hinzufügen</button>
+    </div>
   </div>
 
   <div class="grid-2 mb-20">
@@ -566,7 +570,17 @@ function getRank(points) {
   const sorted = [...RANKS].sort((a,b) => a.min - b.min);
   return sorted.slice().reverse().find(r => points >= r.min) || sorted[0];
 }
-function getRankBadgeHTML(points) { const r = getRank(points); return `<span class="rank-badge ${r.cls}">${r.icon} ${r.name}</span>`; }
+function getRankBadgeHTML(points) {
+  const r = getRank(points);
+  const style = r.color ? `style="background:${r.color};color:${isLight(r.color)?'#1B2D4F':'white'}"` : '';
+  return `<span class="rank-badge ${r.color ? 'rank-custom' : r.cls}" ${style}>${r.icon} ${r.name}</span>`;
+}
+function isLight(hex) {
+  const c = hex.replace('#','');
+  if (c.length < 6) return false;
+  const r=parseInt(c.substr(0,2),16), g=parseInt(c.substr(2,2),16), b=parseInt(c.substr(4,2),16);
+  return (r*299+g*587+b*114)/1000 > 160;
+}
 
 
 let state = {
@@ -659,7 +673,11 @@ function startRealtimeListeners() {
     state.classStreak         = m.classStreak         || 0;
     // Ränge aus Firebase laden falls vorhanden
     if (m.ranks && Array.isArray(m.ranks)) {
-      RANKS = m.ranks.map((r,i) => ({ ...r, max: i < m.ranks.length-1 ? m.ranks[i+1].min-1 : Infinity }));
+      RANKS = m.ranks.map((r,i) => ({
+        ...r,
+        max: i < m.ranks.length-1 ? m.ranks[i+1].min-1 : Infinity,
+        color: r.color || null,
+      }));
     }
     reRender();
   });
@@ -1060,37 +1078,117 @@ function renderRankEditor() {
   if (!el) return;
   el.innerHTML = '';
   RANKS.forEach((r, i) => {
+    const badgeStyle = r.color
+      ? `background:${r.color};color:${isLight(r.color)?'#1B2D4F':'white'}`
+      : '';
+    const badgeCls = r.color ? 'rank-custom' : r.cls;
     el.innerHTML += `
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;background:var(--bg);padding:10px;border-radius:10px;border:1px solid var(--border);">
-        <span class="rank-badge ${r.cls}" style="min-width:80px;justify-content:center;">${r.icon} ${r.name}</span>
+        <span class="rank-badge ${badgeCls}" style="min-width:80px;justify-content:center;${badgeStyle}">${r.icon} ${r.name}</span>
         <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;">
           <div>
             <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Name</div>
-            <input type="text" class="form-input" id="rank-name-${i}" value="${r.name}" style="width:90px;padding:6px 10px;">
+            <input type="text" class="form-input" id="rank-name-${i}" value="${r.name}" style="width:90px;padding:6px 10px;"
+              oninput="previewRank(${i})">
           </div>
           <div>
             <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Emoji</div>
-            <input type="text" class="form-input" id="rank-icon-${i}" value="${r.icon}" style="width:60px;padding:6px 10px;" maxlength="4">
+            <input type="text" class="form-input" id="rank-icon-${i}" value="${r.icon}" style="width:55px;padding:6px 10px;" maxlength="4"
+              oninput="previewRank(${i})">
           </div>
           <div>
             <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Ab Punkte</div>
             <input type="number" class="form-input" id="rank-min-${i}" value="${r.min}" min="0" style="width:80px;padding:6px 10px;" ${i===0?'disabled':''}>
           </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Farbe</div>
+            <div style="display:flex;gap:4px;align-items:center;">
+              <input type="color" id="rank-color-${i}" value="${r.color || rankClsToHex(r.cls)}"
+                style="width:40px;height:34px;border-radius:8px;border:2px solid var(--border);cursor:pointer;padding:2px;"
+                oninput="previewRank(${i})">
+              <button onclick="resetRankColor(${i})" title="Farbe zurücksetzen"
+                style="height:34px;padding:0 8px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:14px;">↩</button>
+            </div>
+          </div>
         </div>
+        ${RANKS.length > 1 ? `<button onclick="deleteRank(${i})" title="Rang löschen"
+          style="height:34px;padding:0 10px;border-radius:8px;border:none;background:var(--red);color:white;cursor:pointer;font-size:16px;flex-shrink:0;">🗑</button>` : ''}
       </div>`;
   });
 }
 
+function rankClsToHex(cls) {
+  const map = {
+    'rank-holz':'#8B6914','rank-stein':'#6B7A99','rank-kupfer':'#B87333',
+    'rank-bronze':'#CD7F32','rank-silber':'#A8A9AD','rank-gold':'#F5B700','rank-platin':'#C0C0C0'
+  };
+  return map[cls] || '#4A90D9';
+}
+
+function previewRank(i) {
+  const name  = document.getElementById(`rank-name-${i}`).value || '?';
+  const icon  = document.getElementById(`rank-icon-${i}`).value || '⭐';
+  const color = document.getElementById(`rank-color-${i}`).value;
+  const badge = document.querySelector(`#rank-editor > div:nth-child(${i+1}) .rank-badge`);
+  if (badge) {
+    badge.textContent = `${icon} ${name}`;
+    badge.style.background = color;
+    badge.style.color = isLight(color) ? '#1B2D4F' : 'white';
+  }
+}
+
+function resetRankColor(i) {
+  const defaultColor = rankClsToHex(RANKS[i].cls);
+  document.getElementById(`rank-color-${i}`).value = defaultColor;
+  previewRank(i);
+}
+
+function deleteRank(i) {
+  if (RANKS.length <= 1) { showToast('❗ Mindestens ein Rang muss vorhanden sein.', 'error'); return; }
+  if (!confirm(`Rang „${RANKS[i].name}" wirklich löschen?`)) return;
+  RANKS.splice(i, 1);
+  renderRankEditor();
+  showToast('🗑 Rang entfernt — bitte speichern!', 'info');
+}
+
+function addNewRank() {
+  const lastMin = RANKS.length > 0 ? RANKS[RANKS.length-1].min : 0;
+  RANKS.push({
+    name: 'Neuer Rang',
+    icon: '⭐',
+    min: lastMin + 25,
+    max: Infinity,
+    cls: 'rank-custom',
+    color: '#4A90D9'
+  });
+  renderRankEditor();
+  showToast('➕ Neuer Rang hinzugefügt — bitte anpassen und speichern!', 'info');
+  // Scroll zum neuen Rang
+  const editor = document.getElementById('rank-editor');
+  if (editor) editor.lastElementChild?.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
 async function saveRanks() {
-  const newRanks = RANKS.map((r, i) => ({
-    name: document.getElementById(`rank-name-${i}`).value.trim() || r.name,
-    icon: document.getElementById(`rank-icon-${i}`).value.trim() || r.icon,
-    min:  i === 0 ? 0 : (parseInt(document.getElementById(`rank-min-${i}`).value) || r.min),
-    cls:  r.cls,
-  }));
-  // Sortieren nach min
+  const newRanks = RANKS.map((r, i) => {
+    const name  = document.getElementById(`rank-name-${i}`)?.value.trim() || r.name;
+    const icon  = document.getElementById(`rank-icon-${i}`)?.value.trim() || r.icon;
+    const min   = i === 0 ? 0 : (parseInt(document.getElementById(`rank-min-${i}`)?.value) || r.min);
+    const color = document.getElementById(`rank-color-${i}`)?.value || r.color || null;
+    const defaultColor = rankClsToHex(r.cls);
+    return {
+      name, icon, min,
+      cls: r.cls || 'rank-custom',
+      color: color !== defaultColor ? color : null, // Nur speichern wenn abweichend
+    };
+  });
   newRanks.sort((a,b) => a.min - b.min);
+  // Max-Werte neu berechnen
+  newRanks.forEach((r,i) => {
+    r.max = i < newRanks.length-1 ? newRanks[i+1].min-1 : Infinity;
+  });
+  RANKS = newRanks;
   await fbUpdate('meta', { ranks: newRanks });
+  renderRankEditor();
   showToast('✅ Ränge gespeichert!', 'success');
 }
 
@@ -1235,22 +1333,20 @@ async function addStudent() {
   const last     = document.getElementById('new-student-last').value.trim();
   const email    = document.getElementById('new-student-email').value.trim().toLowerCase();
   const password = document.getElementById('new-student-password').value.trim();
-  const btn      = document.getElementById('add-student-btn');
   if (!first||!last||!email||!password) { showToast('❗ Bitte alle Felder ausfüllen.','error'); return; }
   if (password.length < 6) { showToast('❗ Passwort mind. 6 Zeichen.','error'); return; }
   if (state.students.find(s=>s.email===email)) { showToast('❗ E-Mail bereits vergeben.','error'); return; }
-  btn.textContent='Wird angelegt…'; btn.disabled=true;
+  showToast('⏳ Schüler wird angelegt…', 'info');
   try {
     const cred = await fb().createUserWithEmailAndPassword(fb().auth, email, password);
     const newRef = fb().push(fb().ref(fb().db,'students'));
     await fb().set(newRef, { first, last, email, uid:cred.user.uid, points:0, streak:0, log:[] });
+    closeModal('modal-add-student');
     showToast(`👤 ${first} ${last} angelegt! Bitte neu als Lehrer einloggen.`, 'success');
-    setTimeout(() => doLogout(), 2000);
+    setTimeout(() => doLogout(), 2500);
   } catch(e) {
     showToast(e.code==='auth/email-already-in-use'?'❗ E-Mail bereits vergeben.':`❗ ${e.message}`,'error');
   }
-  btn.textContent='Hinzufügen'; btn.disabled=false;
-  closeModal('modal-add-student');
 }
 
 function openAddRewardModal() {
