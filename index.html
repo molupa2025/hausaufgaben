@@ -514,7 +514,7 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     <div class="form-group"><label class="form-label">E-Mail-Adresse (Login)</label><input type="email" class="form-input" id="new-student-email" placeholder="z.B. anna.mueller@schule.de"></div>
     <div class="form-group"><label class="form-label">Passwort</label><input type="text" class="form-input" id="new-student-password" placeholder="Passwort für den Schüler"></div>
     <div class="gap-12 mt-20">
-      <button class="btn btn-primary" onclick="addStudent()">Hinzufügen</button>
+      <button class="btn btn-primary" id="add-student-btn" onclick="addStudent()">Hinzufügen</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-add-student')">Abbrechen</button>
     </div>
   </div>
@@ -1396,4 +1396,3 @@ function formatDate(d) { if(!d) return ''; const [y,m,day]=d.split('-'); return 
 </script>
 </body>
 </html>
-
