@@ -12,25 +12,29 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update, remove, push }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, updatePassword }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCtMbp22HvHDWSUhgw94HZGhGQxuHGg0Ec",
-    authDomain: "hausaufgaben-held.firebaseapp.com",
-    databaseURL: "https://hausaufgaben-held-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "hausaufgaben-held",
-    storageBucket: "hausaufgaben-held.firebasestorage.app",
-    messagingSenderId: "309536826889",
-    appId: "1:309536826889:web:a1133122779e6903aa3ad8"
-  
+ apiKey: "AIzaSyCtMbp22HvHDWSUhgw94HZGhGQxuHGg0Ec",
+  authDomain: "hausaufgaben-held.firebaseapp.com",
+  databaseURL: "https://hausaufgaben-held-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "hausaufgaben-held",
+  storageBucket: "hausaufgaben-held.firebasestorage.app",
+  messagingSenderId: "309536826889",
+  appId: "1:309536826889:web:a1133122779e6903aa3ad8"
 };
 
 
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
+const app  = initializeApp(firebaseConfig);
+const db   = getDatabase(app);
+const auth = getAuth(app);
 
-// Globale Hilfsfunktionen, die der Rest der Seite verwenden kann
-window._fb = { db, ref, set, get, onValue, update, remove, push };
+window._fb = { db, ref, set, get, onValue, update, remove, push,
+  auth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, updatePassword };
 window._fbReady = true;
 window.dispatchEvent(new Event('firebase-ready'));
 </script>
@@ -275,13 +279,11 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
   <div class="loading-sub">Verbindung zu Firebase…</div>
 </div>
 
-<!-- CONFIG WARNING (erscheint wenn Firebase nicht konfiguriert ist) -->
+<!-- CONFIG WARNING -->
 <div id="config-warning">
   <div class="config-box">
     <h2>⚠️ Firebase nicht konfiguriert</h2>
-    <p style="margin-bottom:12px;">Du hast noch keine Firebase-Zugangsdaten eingetragen.<br>
-    Öffne die HTML-Datei in einem Texteditor und ersetze die Platzhalter im Abschnitt <code>firebaseConfig</code> (ganz oben im Script-Tag).</p>
-    <p>Die genauen Schritte findest du in der beigelegten <b>Anleitung</b>.</p>
+   Ey du hohlbirne, Firebase muss noch konfiguriert werden
   </div>
 </div>
 
@@ -294,8 +296,8 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
       <div class="logo-sub">Belohnungssystem für Klassen</div>
     </div>
     <div class="form-group">
-      <label class="form-label">Benutzername</label>
-      <input type="text" class="form-input" id="login-user" placeholder="Benutzername" autocomplete="username">
+      <label class="form-label">E-Mail-Adresse</label>
+      <input type="email" class="form-input" id="login-user" placeholder="z.B. lehrer@hausaufgabenheld.de" autocomplete="email">
     </div>
     <div class="form-group">
       <label class="form-label">Passwort</label>
@@ -509,7 +511,7 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     <div class="modal-title">👤 Schüler hinzufügen</div>
     <div class="form-group"><label class="form-label">Vorname</label><input type="text" class="form-input" id="new-student-first" placeholder="Vorname"></div>
     <div class="form-group"><label class="form-label">Nachname</label><input type="text" class="form-input" id="new-student-last" placeholder="Nachname"></div>
-    <div class="form-group"><label class="form-label">Benutzername (Login)</label><input type="text" class="form-input" id="new-student-username" placeholder="z.B. anna.mueller"></div>
+    <div class="form-group"><label class="form-label">E-Mail-Adresse (Login)</label><input type="email" class="form-input" id="new-student-email" placeholder="z.B. anna.mueller@schule.de"></div>
     <div class="form-group"><label class="form-label">Passwort</label><input type="text" class="form-input" id="new-student-password" placeholder="Passwort für den Schüler"></div>
     <div class="gap-12 mt-20">
       <button class="btn btn-primary" onclick="addStudent()">Hinzufügen</button>
@@ -679,41 +681,48 @@ function reRender() {
 // LOGIN / LOGOUT
 // ============================================================
 
-let TEACHER_PASSWORD = 'lehrer123';
-
-async function loadTeacherPassword() {
-  try {
-    const snap = await fb().get(fb().ref(fb().db, 'meta/teacherPassword'));
-    if (snap.val()) TEACHER_PASSWORD = snap.val();
-  } catch(e) {}
-}
+// Lehrer E-Mail — hier deine Lehrer-E-Mail eintragen
+const TEACHER_EMAIL = 'lehrer@hausaufgabenheld.de';
 
 async function doLogin() {
-  const u = document.getElementById('login-user').value.trim();
-  const p = document.getElementById('login-pass').value;
-  const err = document.getElementById('login-error');
+  const email = document.getElementById('login-user').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const err   = document.getElementById('login-error');
+  const btn   = document.querySelector('#login-screen .btn-primary');
   err.style.display = 'none';
+  btn.textContent = 'Anmelden…';
+  btn.disabled = true;
 
-	if (u === 'lehrer' && p === TEACHER_PASSWORD) {
-    state.currentUser = { username: u, role: 'teacher', name: 'Lehrkraft' };
-    startApp();
-    return;
+  try {
+    const cred = await fb().signInWithEmailAndPassword(fb().auth, email, pass);
+    if (email === TEACHER_EMAIL) {
+      state.currentUser = { uid: cred.user.uid, email, role: 'teacher', name: 'Lehrkraft' };
+      startApp();
+    } else {
+      const student = state.students.find(s => s.email === email);
+      if (student) {
+        state.currentUser = { uid: cred.user.uid, email, role: 'student', name: `${student.first} ${student.last}`, studentId: student.id };
+        startApp();
+      } else {
+        await fb().signOut(fb().auth);
+        err.textContent = '❌ Kein Schüler-Account gefunden. Bitte den Lehrer kontaktieren.';
+        err.style.display = 'block';
+      }
+    }
+  } catch(e) {
+    err.textContent = '❌ Ungültige E-Mail oder falsches Passwort.';
+    err.style.display = 'block';
   }
-  // Schüler-Login: gegen Firebase prüfen
-  const student = state.students.find(s => s.username === u && s.password === p);
-  if (student) {
-    state.currentUser = { username: u, role: 'student', name: `${student.first} ${student.last}`, studentId: student.id };
-    startApp();
-    return;
-  }
-  err.style.display = 'block';
+  btn.textContent = 'Anmelden';
+  btn.disabled = false;
 }
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('login-screen').classList.contains('visible')) doLogin();
 });
 
-function doLogout() {
+async function doLogout() {
+  await fb().signOut(fb().auth);
   state.currentUser = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').classList.add('visible');
@@ -760,7 +769,6 @@ async function initApp() {
     return;
   }
 
-  await loadTeacherPassword();
   startRealtimeListeners();
   document.getElementById('loading-overlay').style.display = 'none';
   document.getElementById('login-screen').classList.add('visible');
@@ -1133,13 +1141,16 @@ async function doAdjustPoints() {
 async function changeTeacherPassword() {
   const pw1 = document.getElementById('new-teacher-pw').value;
   const pw2 = document.getElementById('new-teacher-pw2').value;
-  if (!pw1 || pw1.length < 4) { showToast('❗ Passwort muss mindestens 4 Zeichen haben.', 'error'); return; }
+  if (!pw1 || pw1.length < 6) { showToast('❗ Passwort mind. 6 Zeichen.', 'error'); return; }
   if (pw1 !== pw2) { showToast('❗ Passwörter stimmen nicht überein.', 'error'); return; }
-  await fbSet('meta/teacherPassword', pw1);
-  TEACHER_PASSWORD = pw1;
-  document.getElementById('new-teacher-pw').value = '';
-  document.getElementById('new-teacher-pw2').value = '';
-  showToast('✅ Lehrer-Passwort wurde geändert!', 'success');
+  try {
+    await fb().updatePassword(fb().auth.currentUser, pw1);
+    document.getElementById('new-teacher-pw').value = '';
+    document.getElementById('new-teacher-pw2').value = '';
+    showToast('✅ Passwort geändert!', 'success');
+  } catch(e) {
+    showToast(e.code==='auth/requires-recent-login'?'❗ Bitte neu einloggen und dann Passwort ändern.':`❗ ${e.message}`,'error');
+  }
 }
 async function removeStudent(id) {
   if (!confirm('Schüler wirklich entfernen?')) return;
@@ -1216,20 +1227,30 @@ function renderRedeemLog() {
 // ADD STUDENT / REWARD
 // ============================================================
 function openAddStudentModal() {
-  ['new-student-first','new-student-last','new-student-username','new-student-password'].forEach(id=>document.getElementById(id).value='');
+  ['new-student-first','new-student-last','new-student-email','new-student-password'].forEach(id=>document.getElementById(id).value='');
   openModal('modal-add-student');
 }
 async function addStudent() {
-  const first=document.getElementById('new-student-first').value.trim();
-  const last=document.getElementById('new-student-last').value.trim();
-  const username=document.getElementById('new-student-username').value.trim();
-  const password=document.getElementById('new-student-password').value.trim();
-  if(!first||!last||!username||!password) { showToast('❗ Bitte alle Felder ausfüllen.','error'); return; }
-  if(state.students.find(s=>s.username===username)) { showToast('❗ Benutzername bereits vergeben.','error'); return; }
-  const newRef=fb().push(fb().ref(fb().db,'students'));
-  await fb().set(newRef, { first, last, username, password, points:0, streak:0, log:[] });
+  const first    = document.getElementById('new-student-first').value.trim();
+  const last     = document.getElementById('new-student-last').value.trim();
+  const email    = document.getElementById('new-student-email').value.trim().toLowerCase();
+  const password = document.getElementById('new-student-password').value.trim();
+  const btn      = document.getElementById('add-student-btn');
+  if (!first||!last||!email||!password) { showToast('❗ Bitte alle Felder ausfüllen.','error'); return; }
+  if (password.length < 6) { showToast('❗ Passwort mind. 6 Zeichen.','error'); return; }
+  if (state.students.find(s=>s.email===email)) { showToast('❗ E-Mail bereits vergeben.','error'); return; }
+  btn.textContent='Wird angelegt…'; btn.disabled=true;
+  try {
+    const cred = await fb().createUserWithEmailAndPassword(fb().auth, email, password);
+    const newRef = fb().push(fb().ref(fb().db,'students'));
+    await fb().set(newRef, { first, last, email, uid:cred.user.uid, points:0, streak:0, log:[] });
+    showToast(`👤 ${first} ${last} angelegt! Bitte neu als Lehrer einloggen.`, 'success');
+    setTimeout(() => doLogout(), 2000);
+  } catch(e) {
+    showToast(e.code==='auth/email-already-in-use'?'❗ E-Mail bereits vergeben.':`❗ ${e.message}`,'error');
+  }
+  btn.textContent='Hinzufügen'; btn.disabled=false;
   closeModal('modal-add-student');
-  showToast(`👤 ${first} ${last} hinzugefügt!`,'success');
 }
 
 function openAddRewardModal() {
@@ -1375,3 +1396,4 @@ function formatDate(d) { if(!d) return ''; const [y,m,day]=d.split('-'); return 
 </script>
 </body>
 </html>
+
