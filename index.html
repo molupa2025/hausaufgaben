@@ -15,13 +15,14 @@ import { getDatabase, ref, set, get, onValue, update, remove, push }
 
 
 const firebaseConfig = {
- apiKey: "AIzaSyCtMbp22HvHDWSUhgw94HZGhGQxuHGg0Ec",
-  authDomain: "hausaufgaben-held.firebaseapp.com",
-  databaseURL: "https://hausaufgaben-held-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "hausaufgaben-held",
-  storageBucket: "hausaufgaben-held.firebasestorage.app",
-  messagingSenderId: "309536826889",
-  appId: "1:309536826889:web:a1133122779e6903aa3ad8"
+    apiKey: "AIzaSyCtMbp22HvHDWSUhgw94HZGhGQxuHGg0Ec",
+    authDomain: "hausaufgaben-held.firebaseapp.com",
+    databaseURL: "https://hausaufgaben-held-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "hausaufgaben-held",
+    storageBucket: "hausaufgaben-held.firebasestorage.app",
+    messagingSenderId: "309536826889",
+    appId: "1:309536826889:web:a1133122779e6903aa3ad8"
+  
 };
 
 
@@ -274,11 +275,13 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
   <div class="loading-sub">Verbindung zu Firebase…</div>
 </div>
 
-<!-- CONFIG WARNING -->
+<!-- CONFIG WARNING (erscheint wenn Firebase nicht konfiguriert ist) -->
 <div id="config-warning">
   <div class="config-box">
     <h2>⚠️ Firebase nicht konfiguriert</h2>
-   Ey du hohlbirne, Firebase muss noch konfiguriert werden
+    <p style="margin-bottom:12px;">Du hast noch keine Firebase-Zugangsdaten eingetragen.<br>
+    Öffne die HTML-Datei in einem Texteditor und ersetze die Platzhalter im Abschnitt <code>firebaseConfig</code> (ganz oben im Script-Tag).</p>
+    <p>Die genauen Schritte findest du in der beigelegten <b>Anleitung</b>.</p>
   </div>
 </div>
 
