@@ -388,7 +388,7 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     <div class="milestone-path" id="milestone-path"><div class="milestone-connector"></div></div>
   </div>
 <div class="card mb-20">
-  <div class="card-title">🔐 Lehrer-Passwort ändern</div>
+  <div class="card-title">🔐 Passwort ändern</div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
     <div class="form-group" style="margin-bottom:0;flex:1;min-width:180px;">
       <label class="form-label">Neues Passwort</label>
@@ -400,6 +400,7 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     </div>
     <button class="btn btn-secondary" onclick="changeTeacherPassword()">🔐 Ändern</button>
   </div>
+  <div class="text-muted" style="margin-top:8px;font-size:12px;" id="pw-change-hint"></div>
 </div>
   <div class="admin-section-title">⚙️ Verwalten</div>
 
@@ -701,9 +702,10 @@ function reRender() {
 
 // Lehrer E-Mail — hier deine Lehrer-E-Mail eintragen
 const TEACHER_EMAIL = 'lehrer@hausaufgabenheld.de';
+const ADMIN_EMAIL   = 'admin@hausaufgabenheld.de';
 
 async function doLogin() {
-  const email = document.getElementById('login-user').value.trim();
+  const email = document.getElementById('login-user').value.trim().toLowerCase();
   const pass  = document.getElementById('login-pass').value;
   const err   = document.getElementById('login-error');
   const btn   = document.querySelector('#login-screen .btn-primary');
@@ -713,7 +715,10 @@ async function doLogin() {
 
   try {
     const cred = await fb().signInWithEmailAndPassword(fb().auth, email, pass);
-    if (email === TEACHER_EMAIL) {
+    if (email === ADMIN_EMAIL) {
+      state.currentUser = { uid: cred.user.uid, email, role: 'admin', name: 'Systemadministrator' };
+      startApp();
+    } else if (email === TEACHER_EMAIL) {
       state.currentUser = { uid: cred.user.uid, email, role: 'teacher', name: 'Lehrkraft' };
       startApp();
     } else {
@@ -723,7 +728,7 @@ async function doLogin() {
         startApp();
       } else {
         await fb().signOut(fb().auth);
-        err.textContent = '❌ Kein Schüler-Account gefunden. Bitte den Lehrer kontaktieren.';
+        err.textContent = '❌ Kein Account gefunden. Bitte den Lehrer kontaktieren.';
         err.style.display = 'block';
       }
     }
@@ -749,14 +754,20 @@ async function doLogout() {
 function startApp() {
   document.getElementById('login-screen').classList.remove('visible');
   document.getElementById('app').style.display = 'block';
-  document.getElementById('header-user-badge').textContent =
-    state.currentUser.role === 'teacher' ? '👩‍🏫 ' + state.currentUser.name : '🎒 ' + state.currentUser.name;
+  const role = state.currentUser.role;
+  const badgeIcon = role === 'admin' ? '🛡️' : role === 'teacher' ? '👩‍🏫' : '🎒';
+  document.getElementById('header-user-badge').textContent = badgeIcon + ' ' + state.currentUser.name;
   document.getElementById('header-date').textContent =
     new Date().toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
 
-  if (state.currentUser.role === 'teacher') {
+  if (role === 'teacher' || role === 'admin') {
     document.getElementById('view-teacher').classList.add('active');
     document.getElementById('view-student').classList.remove('active');
+    // Admin-spezifische Elemente ein-/ausblenden
+    const adminOnly = document.querySelectorAll('.admin-only');
+    const teacherOnly = document.querySelectorAll('.teacher-only');
+    adminOnly.forEach(el => el.style.display = role === 'admin' ? '' : 'none');
+    teacherOnly.forEach(el => el.style.display = role === 'teacher' ? '' : 'none');
     render();
   } else {
     document.getElementById('view-teacher').classList.remove('active');
@@ -1237,14 +1248,17 @@ async function doAdjustPoints() {
   closeModal('modal-adjust-points');
 }
 async function changeTeacherPassword() {
-  const pw1 = document.getElementById('new-teacher-pw').value;
-  const pw2 = document.getElementById('new-teacher-pw2').value;
+  const pw1  = document.getElementById('new-teacher-pw').value;
+  const pw2  = document.getElementById('new-teacher-pw2').value;
+  const hint = document.getElementById('pw-change-hint');
   if (!pw1 || pw1.length < 6) { showToast('❗ Passwort mind. 6 Zeichen.', 'error'); return; }
   if (pw1 !== pw2) { showToast('❗ Passwörter stimmen nicht überein.', 'error'); return; }
   try {
     await fb().updatePassword(fb().auth.currentUser, pw1);
     document.getElementById('new-teacher-pw').value = '';
     document.getElementById('new-teacher-pw2').value = '';
+    const role = state.currentUser.role;
+    if (hint) hint.textContent = `✅ Passwort für ${role === 'admin' ? 'Administrator' : 'Lehrer'} erfolgreich geändert.`;
     showToast('✅ Passwort geändert!', 'success');
   } catch(e) {
     showToast(e.code==='auth/requires-recent-login'?'❗ Bitte neu einloggen und dann Passwort ändern.':`❗ ${e.message}`,'error');
