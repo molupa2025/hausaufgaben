@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Hausaufgabensystem – Belohnungssystem</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -13,7 +13,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, set, get, onValue, update, remove, push }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, updatePassword }
+  signOut, updatePassword, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
@@ -34,7 +34,7 @@ const auth = getAuth(app);
 
 window._fb = { db, ref, set, get, onValue, update, remove, push,
   auth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, updatePassword };
+  signOut, updatePassword, onAuthStateChanged };
 window._fbReady = true;
 window.dispatchEvent(new Event('firebase-ready'));
 </script>
@@ -127,6 +127,101 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 @media(max-width:900px) { .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr 1fr; } }
 @media(max-width:600px) { .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; } }
 
+/* ============================================================
+   MOBILE ANSICHT — nur für Smartphones (nicht Tablets)
+   Tablets (min-width:601px) behalten Desktop-Ansicht
+============================================================ */
+@media(max-width:600px) and (pointer:coarse) {
+
+  /* Header vereinfachen */
+  header { padding:0 16px; height:56px; }
+  .logo-text { font-size:18px; }
+  .logo-sub  { display:none; }
+  #header-date { display:none; }
+  .user-badge { font-size:12px; padding:3px 8px; }
+  header .btn-sm { font-size:11px; padding:5px 10px; }
+
+  /* Main Padding reduzieren */
+  main { padding:16px 12px 80px 12px; }
+
+  /* Stat-Boxen: 2 pro Reihe auf Mobile */
+  .grid-4 { grid-template-columns:1fr 1fr !important; gap:10px !important; }
+  .stat-box { padding:14px 12px; gap:10px; }
+  .stat-icon { font-size:24px; }
+  .stat-val  { font-size:24px; }
+  .stat-label { font-size:10px; }
+
+  /* Cards */
+  .card { padding:16px; border-radius:12px; }
+  .card-title { font-size:15px; }
+
+  /* HW Check */
+  .hw-date-header { flex-direction:column; align-items:flex-start; }
+  .hw-search { width:100%; }
+  .hw-check-grid { grid-template-columns:1fr; }
+
+  /* Reward Grid */
+  .reward-grid { grid-template-columns:1fr 1fr; gap:10px; }
+  .reward-icon { font-size:28px; }
+  .reward-name { font-size:13px; }
+
+  /* Charts: kleiner auf Mobile */
+  #chart-points, #chart-week { max-height:180px; }
+
+  /* Milestone */
+  .milestone-circle { width:48px; height:48px; font-size:20px; }
+  .milestone-connector { left:24px; }
+
+  /* Leaderboard */
+  .lb-pts { font-size:16px; }
+
+  /* Profile Hero */
+  .profile-hero { padding:20px 16px; }
+  #sp-points { font-size:36px !important; }
+
+  /* Modals */
+  .modal { padding:20px 16px; border-radius:16px 16px 0 0; position:fixed; bottom:0; left:0; right:0; max-width:100%; margin:0; transform:translateY(20px); }
+  .modal-overlay.open .modal { transform:translateY(0); }
+
+  /* Toast */
+  #toast { bottom:80px; right:12px; left:12px; max-width:100%; font-size:13px; }
+
+  /* Admin-Section Title */
+  .admin-section-title { font-size:16px; }
+
+  /* Bottom Navigation */
+  #mobile-nav {
+    display:flex !important;
+    position:fixed; bottom:0; left:0; right:0; z-index:200;
+    background:var(--navy);
+    box-shadow:0 -2px 16px rgba(27,45,79,0.25);
+    height:64px;
+  }
+  .mobile-nav-btn {
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:2px; color:rgba(255,255,255,0.55);
+    font-size:10px; font-weight:600; border:none; background:none;
+    cursor:pointer; padding:8px 4px; transition:color 0.2s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mobile-nav-btn.active { color:var(--gold); }
+  .mobile-nav-btn .nav-icon { font-size:22px; line-height:1; }
+
+  /* Abmelden-Button im Header ausblenden — stattdessen in Mobile-Nav */
+  .header-logout { display:none; }
+
+  /* Sections die per Mobile-Nav gesteuert werden */
+  .mobile-section { display:none; }
+  .mobile-section.active { display:block; }
+}
+
+/* Tablets und größer: normale Desktop-Ansicht, Bottom-Nav verstecken */
+@media(min-width:601px) {
+  #mobile-nav { display:none !important; }
+  .mobile-section { display:block !important; }
+  .header-logout { display:flex !important; }
+}
+
 .stat-box {
   background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
   padding:20px 24px; border-left:5px solid var(--gold); display:flex; align-items:center; gap:16px;
@@ -216,6 +311,23 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 .form-input:focus { outline:none; border-color:var(--gold); background:white; }
 
 #toast { position:fixed; bottom:24px; right:24px; z-index:9999; background:var(--navy); color:white; padding:14px 22px; border-radius:14px; font-weight:600; font-size:14px; box-shadow:0 8px 32px rgba(0,0,0,0.25); transform:translateY(80px); opacity:0; transition:transform 0.3s,opacity 0.3s; max-width:340px; display:flex; align-items:center; gap:10px; }
+/* Mobile viewport meta fix */
+@media(max-width:600px) {
+  header .sync-dot { display:none; }
+  .hw-actions .btn-hw { width:38px; height:38px; font-size:18px; }
+  .milestone-item { gap:10px; }
+  .milestone-info .milestone-name { font-size:13px; }
+  .milestone-info .milestone-desc { font-size:11px; }
+  .log-entry { flex-wrap:wrap; }
+  .lb-row { padding:10px 12px; gap:10px; }
+  .stat-box { border-radius:12px; }
+  .section-title { font-size:20px; }
+  .reward-card { padding:14px 10px; }
+  .compare-label { width:70px; font-size:11px; }
+  .form-input, .hw-search { font-size:16px; } /* Verhindert iOS Zoom */
+  .btn { min-height:44px; } /* Touch-Target Mindestgröße */
+  .btn-sm { min-height:36px; }
+}
 #toast.show { transform:translateY(0); opacity:1; }
 #toast.success { border-left:4px solid var(--green); }
 #toast.error   { border-left:4px solid var(--red); }
@@ -323,14 +435,35 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     <div class="sync-dot" id="sync-dot" title="Echtzeit-Verbindung aktiv"></div>
     <div id="header-date" style="color:rgba(255,255,255,0.6);font-size:13px;"></div>
     <div class="user-badge" id="header-user-badge">—</div>
-    <button class="btn btn-sm" style="background:rgba(255,255,255,0.12);color:white;border:none;" onclick="doLogout()">Abmelden</button>
+    <button class="btn btn-sm header-logout" style="background:rgba(255,255,255,0.12);color:white;border:none;" onclick="doLogout()">Abmelden</button>
   </div>
 </header>
+
+<!-- MOBILE BOTTOM NAVIGATION (nur auf Smartphones sichtbar) -->
+<div id="mobile-nav" style="display:none;">
+  <button class="mobile-nav-btn active" id="nav-btn-home" onclick="mobileNav('home')">
+    <span class="nav-icon">🏠</span>Übersicht
+  </button>
+  <button class="mobile-nav-btn" id="nav-btn-hw" onclick="mobileNav('hw')">
+    <span class="nav-icon">📋</span>Hausauf.
+  </button>
+  <button class="mobile-nav-btn" id="nav-btn-rank" onclick="mobileNav('rank')">
+    <span class="nav-icon">🏅</span>Rangliste
+  </button>
+  <button class="mobile-nav-btn" id="nav-btn-rewards" onclick="mobileNav('rewards')">
+    <span class="nav-icon">🎁</span>Bel.
+  </button>
+  <button class="mobile-nav-btn" id="nav-btn-settings" onclick="mobileNav('settings')">
+    <span class="nav-icon">⚙️</span>Mehr
+  </button>
+</div>
 
 <main>
 
 <!-- LEHRER-ANSICHT -->
 <div id="view-teacher" class="view">
+  <!-- HOME SECTION: Stats + Klassenmeter -->
+  <div class="mobile-section active" id="mobile-home">
   <div class="grid-4 mb-20" style="grid-template-columns:repeat(3,1fr);gap:16px;">
     <div class="stat-box"><div class="stat-icon">👥</div><div><div class="stat-val" id="stat-students">0</div><div class="stat-label">Schüler gesamt</div></div></div>
     <div class="stat-box" style="border-left-color:var(--green)"><div class="stat-icon">✅</div><div><div class="stat-val" id="stat-today-done">0</div><div class="stat-label">Heute erledigt</div></div></div>
@@ -356,6 +489,10 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     <div id="timer-box-container"></div>
   </div>
 
+  </div><!-- /mobile-home -->
+
+  <!-- HW SECTION -->
+  <div class="mobile-section" id="mobile-hw">
   <div class="card mb-20">
     <div class="hw-date-header">
       <div class="card-title">📋 Hausaufgaben eintragen</div>
@@ -368,6 +505,10 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     <div class="hw-check-grid" id="hw-check-grid"></div>
   </div>
 
+  </div><!-- /mobile-hw -->
+
+  <!-- RANK SECTION: Charts + Top/Flop + Rangliste -->
+  <div class="mobile-section" id="mobile-rank">
   <div class="grid-2 mb-20">
     <div class="card"><div class="card-title">📊 Punkteverteilung</div><canvas id="chart-points" height="220"></canvas></div>
     <div class="card"><div class="card-title">📈 Wochenverlauf</div><canvas id="chart-week" height="220"></canvas></div>
@@ -380,6 +521,10 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 
   <div class="card mb-20"><div class="card-title">🏅 Rangliste</div><div id="leaderboard"></div></div>
 
+  </div><!-- /mobile-rank -->
+
+  <!-- REWARDS SECTION: Eingelöste Belohnungen + Meilensteine -->
+  <div class="mobile-section" id="mobile-rewards">
   <div class="card mb-20"><div class="card-title">🎁 Eingelöste Belohnungen</div><div id="redeem-log-list"><div class="text-muted">Noch keine Belohnungen eingelöst.</div></div></div>
 
   <div class="card mb-20">
@@ -402,6 +547,10 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
   </div>
   <div class="text-muted" style="margin-top:8px;font-size:12px;" id="pw-change-hint"></div>
 </div>
+  </div><!-- /mobile-rewards -->
+
+  <!-- SETTINGS SECTION: Verwalten + Einstellungen -->
+  <div class="mobile-section" id="mobile-settings">
   <div class="admin-section-title">⚙️ Verwalten</div>
 
   <!-- SYSTEMEINSTELLUNGEN -->
@@ -444,7 +593,17 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
   <div class="grid-2 mb-20">
     <div class="card">
       <div class="card-title">👤 Schüler verwalten</div>
-      <button class="btn btn-secondary btn-sm mb-12" onclick="openAddStudentModal()">+ Schüler hinzufügen</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+        <button class="btn btn-secondary btn-sm" onclick="openAddStudentModal()">+ Schüler hinzufügen</button>
+        <select class="form-input" id="student-sort" style="width:auto;padding:7px 12px;font-size:13px;" onchange="renderStudentManage()">
+          <option value="last-az">Nachname A–Z</option>
+          <option value="first-az">Vorname A–Z</option>
+          <option value="points-desc">Punkte ↓</option>
+          <option value="points-asc">Punkte ↑</option>
+          <option value="streak-desc">Streak ↓</option>
+          <option value="streak-asc">Streak ↑</option>
+        </select>
+      </div>
       <div id="student-manage-list"></div>
     </div>
     <div class="card">
@@ -453,13 +612,15 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
       <div id="reward-manage-list"></div>
     </div>
   </div>
-</div>
+  </div><!-- /mobile-settings -->
+
+</div><!-- /view-teacher -->
 
 <!-- SCHÜLER-ANSICHT -->
 <div id="view-student" class="view">
   <div class="motiv-box mb-20">
     <div style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--gold-light);margin-bottom:8px;">✨ Dein täglicher Mutmacher</div>
-    <div class="motiv-loading" id="motiv-quote">Motivationsspruch wird geladen…</div>
+    <div class="motiv-loading" id="motiv-quote">✨ Dein persönlicher Mutmacher erscheint gleich…</div>
     <div style="font-size:12px;opacity:0.55;margin-top:6px;">– KI-generiert für dich</div>
     <button class="btn btn-sm" style="margin-top:12px;background:rgba(255,255,255,0.12);color:white;border:none;" onclick="loadMotivation()">🔄 Neuer Spruch</button>
   </div>
@@ -673,11 +834,15 @@ function startRealtimeListeners() {
     state.classBonusScheduled = m.classBonusScheduled || {};
     state.classStreak         = m.classStreak         || 0;
     // Ränge aus Firebase laden falls vorhanden
-    if (m.ranks && Array.isArray(m.ranks)) {
-      RANKS = m.ranks.map((r,i) => ({
-        ...r,
-        max: i < m.ranks.length-1 ? m.ranks[i+1].min-1 : Infinity,
+    if (m.ranks && Array.isArray(m.ranks) && m.ranks.length > 0) {
+      RANKS = m.ranks.map((r, i) => ({
+        name:  r.name  || 'Rang',
+        icon:  r.icon  || '⭐',
+        min:   r.min   || 0,
+        cls:   r.cls   || 'rank-custom',
         color: r.color || null,
+        // max: gespeicherter Wert oder automatisch aus nächstem min berechnen
+        max:   i < m.ranks.length - 1 ? (m.ranks[i+1].min - 1) : Infinity,
       }));
     }
     reRender();
@@ -769,11 +934,29 @@ function startApp() {
     adminOnly.forEach(el => el.style.display = role === 'admin' ? '' : 'none');
     teacherOnly.forEach(el => el.style.display = role === 'teacher' ? '' : 'none');
     render();
+    setTimeout(() => initMobileNav(), 100);
   } else {
     document.getElementById('view-teacher').classList.remove('active');
     document.getElementById('view-student').classList.add('active');
     renderStudentView();
     loadMotivation();
+    // Mobile Nav für Schüler anpassen
+    if (isMobile()) {
+      const nav = document.getElementById('mobile-nav');
+      if (nav) {
+        nav.innerHTML = `
+          <button class="mobile-nav-btn active" id="nav-btn-profile" onclick="mobileNavStudent('profile')">
+            <span class="nav-icon">⭐</span>Profil
+          </button>
+          <button class="mobile-nav-btn" id="nav-btn-rewards-s" onclick="mobileNavStudent('rewards-s')">
+            <span class="nav-icon">🎁</span>Bel.
+          </button>
+          <button class="mobile-nav-btn" id="nav-btn-class" onclick="mobileNavStudent('class')">
+            <span class="nav-icon">🏫</span>Klasse
+          </button>`;
+        nav.style.display = 'flex';
+      }
+    }
   }
 }
 
@@ -799,8 +982,52 @@ async function initApp() {
   }
 
   startRealtimeListeners();
-  document.getElementById('loading-overlay').style.display = 'none';
-  document.getElementById('login-screen').classList.add('visible');
+
+  // onAuthStateChanged: prüft ob noch eine aktive Session vorhanden ist
+  // Wenn ja → automatisch einloggen ohne Passwort-Eingabe
+  fb().onAuthStateChanged(fb().auth, async (user) => {
+    document.getElementById('loading-overlay').style.display = 'none';
+
+    if (user) {
+      // Nutzer ist noch eingeloggt — Session wiederherstellen
+      const email = user.email.toLowerCase();
+
+      if (email === ADMIN_EMAIL) {
+        state.currentUser = { uid: user.uid, email, role: 'admin', name: 'Systemadministrator' };
+        startApp();
+      } else if (email === TEACHER_EMAIL) {
+        state.currentUser = { uid: user.uid, email, role: 'teacher', name: 'Lehrkraft' };
+        startApp();
+      } else {
+        // Schüler: kurz warten bis Realtime-Listener die Schüler geladen hat
+        const getStudent = () => state.students.find(s => s.email === email);
+        let student = getStudent();
+        if (!student) {
+          // Noch nicht geladen — max 3 Sek. warten
+          await new Promise(resolve => {
+            let tries = 0;
+            const iv = setInterval(() => {
+              student = getStudent();
+              tries++;
+              if (student || tries > 30) { clearInterval(iv); resolve(); }
+            }, 100);
+          });
+        }
+        if (student) {
+          state.currentUser = { uid: user.uid, email, role: 'student',
+            name: `${student.first} ${student.last}`, studentId: student.id };
+          startApp();
+        } else {
+          // Schüler nicht in DB gefunden → ausloggen
+          await fb().signOut(fb().auth);
+          document.getElementById('login-screen').classList.add('visible');
+        }
+      }
+    } else {
+      // Kein eingeloggter Nutzer → Login-Screen zeigen
+      document.getElementById('login-screen').classList.add('visible');
+    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -808,6 +1035,83 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function today() { return new Date().toISOString().split('T')[0]; }
+
+// ============================================================
+// MOBILE NAVIGATION
+// ============================================================
+const MOBILE_SECTIONS = ['home','hw','rank','rewards','settings'];
+
+function isMobile() {
+  return window.innerWidth <= 600 && window.matchMedia('(pointer:coarse)').matches;
+}
+
+function mobileNav(section) {
+  if (!isMobile()) return;
+
+  // Alle Sections ausblenden
+  MOBILE_SECTIONS.forEach(s => {
+    const el = document.getElementById(`mobile-${s}`);
+    if (el) el.classList.remove('active');
+  });
+
+  // Gewählte Section einblenden
+  const target = document.getElementById(`mobile-${section}`);
+  if (target) target.classList.add('active');
+
+  // Nav-Buttons aktualisieren
+  MOBILE_SECTIONS.forEach(s => {
+    const btn = document.getElementById(`nav-btn-${s}`);
+    if (btn) btn.classList.toggle('active', s === section);
+  });
+
+  // Charts neu rendern wenn Rank-Section geöffnet wird
+  if (section === 'rank') {
+    setTimeout(() => renderCharts(), 50);
+  }
+
+  // Nach oben scrollen
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+function initMobileNav() {
+  if (!isMobile()) {
+    // Desktop: alle Sections sichtbar
+    MOBILE_SECTIONS.forEach(s => {
+      const el = document.getElementById(`mobile-${s}`);
+      if (el) el.style.display = 'block';
+    });
+    return;
+  }
+  // Mobile: nur Home sichtbar, Rest per Nav
+  mobileNav('home');
+}
+
+function mobileNavStudent(section) {
+  const sections = {
+    'profile':   ['motiv-box','profile-hero-wrap','compare-wrap','log-wrap'],
+    'rewards-s': ['rewards-wrap'],
+    'class':     ['class-milestone-wrap'],
+  };
+  // Einfach alles zeigen auf Mobile — Schüler-Sections sind weniger komplex
+  // Nur Nav-Button aktiv markieren
+  ['profile','rewards-s','class'].forEach(s => {
+    const btn = document.getElementById(`nav-btn-${s}`);
+    if (btn) btn.classList.toggle('active', s === section);
+  });
+}
+
+// Bei Resize prüfen ob Ansicht wechselt
+window.addEventListener('resize', () => {
+  if (!isMobile()) {
+    MOBILE_SECTIONS.forEach(s => {
+      const el = document.getElementById(`mobile-${s}`);
+      if (el) { el.classList.add('active'); el.style.display = 'block'; }
+    });
+    document.getElementById('mobile-nav').style.display = 'none';
+  } else {
+    document.getElementById('mobile-nav').style.display = 'flex';
+  }
+});
 
 // ============================================================
 // RENDER (LEHRER)
@@ -1189,16 +1493,28 @@ async function saveRanks() {
     return {
       name, icon, min,
       cls: r.cls || 'rank-custom',
-      color: color !== defaultColor ? color : null, // Nur speichern wenn abweichend
+      color: color !== defaultColor ? color : null,
     };
   });
   newRanks.sort((a,b) => a.min - b.min);
-  // Max-Werte neu berechnen
-  newRanks.forEach((r,i) => {
-    r.max = i < newRanks.length-1 ? newRanks[i+1].min-1 : Infinity;
+
+  // Max-Werte berechnen — Infinity NICHT speichern (Firebase unterstützt es nicht)
+  // Stattdessen max weglassen; beim Laden wird der letzte Rang als unbegrenzt behandelt
+  const toSave = newRanks.map((r, i) => {
+    const obj = { name: r.name, icon: r.icon, min: r.min, cls: r.cls };
+    if (r.color) obj.color = r.color;
+    // max nur speichern wenn nicht der letzte Rang
+    if (i < newRanks.length - 1) obj.max = newRanks[i+1].min - 1;
+    return obj;
   });
-  RANKS = newRanks;
-  await fbUpdate('meta', { ranks: newRanks });
+
+  // Lokales RANKS Array mit Infinity für letzten Rang aktualisieren
+  RANKS = newRanks.map((r, i) => ({
+    ...r,
+    max: i < newRanks.length - 1 ? newRanks[i+1].min - 1 : Infinity,
+  }));
+
+  await fbUpdate('meta', { ranks: toSave });
   renderRankEditor();
   showToast('✅ Ränge gespeichert!', 'success');
 }
@@ -1208,7 +1524,23 @@ function renderStudentManage() {
   if (!list) return;
   list.innerHTML = '';
   if (!state.students.length) { list.innerHTML='<div class="text-muted">Noch keine Schüler angelegt.</div>'; return; }
-  state.students.forEach(s => {
+
+  // Sortierung
+  const sortEl = document.getElementById('student-sort');
+  const sort = sortEl ? sortEl.value : 'last-az';
+  const sorted = [...state.students].sort((a, b) => {
+    switch (sort) {
+      case 'last-az':    return (a.last||'').localeCompare(b.last||'', 'de');
+      case 'first-az':   return (a.first||'').localeCompare(b.first||'', 'de');
+      case 'points-desc': return (b.points||0) - (a.points||0);
+      case 'points-asc':  return (a.points||0) - (b.points||0);
+      case 'streak-desc': return (b.streak||0) - (a.streak||0);
+      case 'streak-asc':  return (a.streak||0) - (b.streak||0);
+      default: return 0;
+    }
+  });
+
+  sorted.forEach(s => {
     list.innerHTML += `<div class="log-entry" style="flex-wrap:wrap;gap:8px;">
       <div style="flex:1;min-width:120px;">
         <div style="font-weight:700;">${s.first} ${s.last}</div>
@@ -1462,27 +1794,53 @@ async function redeemStudentReward(studentId, rewardId) {
 // ============================================================
 // MOTIVATION (KI via Anthropic API)
 // ============================================================
-async function loadMotivation() {
-  const el=document.getElementById('motiv-quote');
-  if(!el) return;
-  el.textContent='Motivationsspruch wird geladen…';
-  const sid=state.currentUser?.studentId;
-  const s=sid?state.students.find(x=>x.id===sid):null;
-  const name=s?s.first:'Schüler';
-  const streak=s?s.streak||0:0;
-  const rank=s?getRank(s.points||0).name:'';
-  try {
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000,
-        messages:[{ role:'user', content:`Schreibe einen kurzen, herzlichen Mutmachspruch auf Deutsch für einen Schüler namens ${name} (Rang: ${rank}, Streak: ${streak} Tage), der motiviert werden soll, seine Hausaufgaben regelmäßig zu machen. Der Spruch soll persönlich, positiv und ermutigend sein, ca. 2-3 Sätze lang. Gib NUR den Spruch zurück, ohne Anführungszeichen oder Einleitungstext.` }]
-      })
-    });
-    const data=await resp.json();
-    el.textContent=data.content?.map(c=>c.text||'').join('')||'Du schaffst das!';
-  } catch(e) {
-    el.textContent='Du schaffst das! Jede Hausaufgabe bringt dich deinem Ziel näher. Bleib dran! 💪';
+// 15 Mutmachsprüche — werden zufällig ausgewählt
+const MOTIVATIONS = [
+  "Du bist auf dem richtigen Weg! Jede Hausaufgabe die du erledigst bringt dich einen Schritt weiter — und du wirst merken, wie stolz du danach bist. Mach weiter so! 💪",
+  "Kleine Schritte führen zu großen Zielen. Auch wenn es manchmal schwer fällt: Du schaffst das, und deine Mühe wird sich auszahlen. Heute ist ein guter Tag um durchzuhalten! ⭐",
+  "Weißt du was das Coolste ist? Jede Hausaufgabe die du machst zeigt, dass du es ernst nimmst — und das merken deine Lehrer, deine Mitschüler und vor allem du selbst! 🚀",
+  "Erfolg ist kein Zufall — er entsteht durch Einsatz und Ausdauer, genau wie deiner! Du bist auf einem tollen Weg, also bleib dran und gib heute wieder alles! 🌟",
+  "Stell dir vor, wie gut du dich nach der erledigten Hausaufgabe fühlst. Dieses Gefühl ist es wert! Du hast alles was du brauchst — fang jetzt an! ✅",
+  "Dein Streak zeigt, dass du wirklich dranbleibst — das ist keine Selbstverständlichkeit! Mach heute so weiter wie bisher, du machst das fantastisch! 🔥",
+  "Jeder Tag mit erledigten Hausaufgaben ist ein Baustein für deine Zukunft. Du legst das Fundament — Stein für Stein. Weiter so, du schaffst das! 🏗️",
+  "Manchmal braucht man einfach einen kleinen Schubs. Hier ist er: Du bist clever, du bist fähig, und diese Hausaufgabe ist kein Problem für dich! Los geht's! 💡",
+  "Die besten Schüler sind nicht die ohne Schwierigkeiten — sondern die, die trotz Schwierigkeiten weitermachen. Genau das machst du! Sei stolz auf dich! 🎯",
+  "Deine Mühe von heute ist der Erfolg von morgen. Jede Hausaufgabe die du heute erledigst macht dich morgen sicherer und stärker. Du machst das super! 📚",
+  "Wusstest du, dass regelmäßiges Lernen das Gehirn buchstäblich wachsen lässt? Du investierst gerade in dich selbst — und das ist die beste Investition überhaupt! 🧠",
+  "Auch Profis hatten mal Hausaufgaben — und sie haben sie gemacht. Du bist auf dem gleichen Weg wie alle Erfolgreichen. Mach heute den nächsten Schritt! 🏆",
+  "Du hast schon so viel geschafft bis hierhin. Lass nicht nach jetzt, wo du schon so weit gekommen bist! Heute wieder alles geben — du kannst das! 💫",
+  "Ein kleiner Tipp von mir: Fang einfach an. Nicht perfekt, nicht komplett — einfach anfangen. Der Rest kommt von selbst. Du schaffst das! ✨",
+  "Deine Klassenkameraden zählen auf dich, deine Eltern sind stolz auf dich, und ich bin überzeugt: Du gibst heute wieder dein Bestes. Weiter so! 🌈",
+];
+
+function loadMotivation() {
+  const el = document.getElementById('motiv-quote');
+  if (!el) return;
+
+  const sid   = state.currentUser?.studentId;
+  const s     = sid ? state.students.find(x => x.id === sid) : null;
+  const name  = s ? s.first : '';
+  const streak = s ? (s.streak || 0) : 0;
+
+  // Zufälligen Spruch wählen (anderen als den aktuellen)
+  const current = el.textContent;
+  let spruch;
+  do {
+    spruch = MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)];
+  } while (spruch === current && MOTIVATIONS.length > 1);
+
+  // Spruch personalisieren: Name + Streak einbauen wenn verfügbar
+  if (name) {
+    // Ersten Satz mit Namen beginnen wenn kein Name drin ist
+    if (!spruch.includes(name)) {
+      spruch = `${name}, ` + spruch.charAt(0).toLowerCase() + spruch.slice(1);
+    }
   }
+  if (streak >= 5) {
+    spruch += ` Dein ${streak}-Tage-Streak spricht für sich — das ist beeindruckend! 🔥`;
+  }
+
+  el.textContent = spruch;
 }
 
 // ============================================================
