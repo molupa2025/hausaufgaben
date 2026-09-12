@@ -357,6 +357,36 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 
 .profile-hero { background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%); border-radius:var(--radius); padding:28px; color:white; margin-bottom:20px; }
 
+/* ============================================================
+   SCHÜLERANSICHT — individuell anpassbarer Hintergrund + Dark Mode
+============================================================ */
+#view-student {
+  background:var(--bg);
+  border-radius:20px;
+  padding:10px;
+  transition:background-color 0.3s ease, color 0.3s ease;
+}
+#view-student.dark-mode {
+  --bg: #12161f;
+  --card: #1c2230;
+  --text: #EAEDF5;
+  --text-muted: #9AA5B8;
+  --border: #2b3245;
+  --navy: #C9D6EE;
+}
+.color-picker-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.color-picker-row input[type=color] { width:36px; height:36px; padding:0; border:2px solid var(--border); border-radius:8px; cursor:pointer; background:none; }
+.color-picker-row input[type=text] { width:92px; padding:8px 10px; border-radius:8px; border:2px solid var(--border); font-size:13px; background:var(--bg); color:var(--text); }
+.color-picker-row input[type=number] { width:54px; padding:8px 6px; border-radius:8px; border:2px solid var(--border); font-size:13px; text-align:center; background:var(--bg); color:var(--text); }
+.color-picker-row .rgb-label { font-size:11px; color:var(--text-muted); margin-left:2px; }
+
+.theme-toggle-switch { position:relative; display:inline-block; width:46px; height:26px; }
+.theme-toggle-switch input { opacity:0; width:0; height:0; }
+.theme-toggle-slider { position:absolute; cursor:pointer; inset:0; background:var(--border); border-radius:26px; transition:0.2s; }
+.theme-toggle-slider::before { content:''; position:absolute; height:20px; width:20px; left:3px; bottom:3px; background:white; border-radius:50%; transition:0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.3); }
+.theme-toggle-switch input:checked + .theme-toggle-slider { background:var(--navy); }
+.theme-toggle-switch input:checked + .theme-toggle-slider::before { transform:translateX(20px); }
+
 .timer-box { background:linear-gradient(90deg,#1B2D4F,#2A4070); color:white; border-radius:12px; padding:14px 20px; display:flex; align-items:center; gap:12px; font-size:14px; margin-top:12px; }
 .timer-countdown { font-family:'Fredoka One',cursive; font-size:20px; color:var(--gold-light); }
 
@@ -618,6 +648,48 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 
 <!-- SCHÜLER-ANSICHT -->
 <div id="view-student" class="view">
+
+  <div class="card mb-20" id="sp-theme-card">
+    <div class="card-title">🎨 Darstellung anpassen</div>
+    <div style="display:flex;flex-wrap:wrap;gap:24px;">
+
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">Hintergrundfarbe</div>
+        <div class="color-picker-row">
+          <input type="color" id="sp-bg-color" value="#F0F4F8" oninput="spColorFromPicker('bg')" title="Farbwähler">
+          <input type="text" id="sp-bg-hex" value="#F0F4F8" maxlength="7" oninput="spColorFromHex('bg')" style="text-transform:uppercase;">
+          <span class="rgb-label">R</span><input type="number" id="sp-bg-r" min="0" max="255" value="240" oninput="spColorFromRgb('bg')">
+          <span class="rgb-label">G</span><input type="number" id="sp-bg-g" min="0" max="255" value="244" oninput="spColorFromRgb('bg')">
+          <span class="rgb-label">B</span><input type="number" id="sp-bg-b" min="0" max="255" value="248" oninput="spColorFromRgb('bg')">
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">Overlay-Farbe (Profil &amp; Mutmacher)</div>
+        <div class="color-picker-row">
+          <input type="color" id="sp-overlay-color" value="#1B2D4F" oninput="spColorFromPicker('overlay')" title="Farbwähler">
+          <input type="text" id="sp-overlay-hex" value="#1B2D4F" maxlength="7" oninput="spColorFromHex('overlay')" style="text-transform:uppercase;">
+          <span class="rgb-label">R</span><input type="number" id="sp-overlay-r" min="0" max="255" value="27" oninput="spColorFromRgb('overlay')">
+          <span class="rgb-label">G</span><input type="number" id="sp-overlay-g" min="0" max="255" value="45" oninput="spColorFromRgb('overlay')">
+          <span class="rgb-label">B</span><input type="number" id="sp-overlay-b" min="0" max="255" value="79" oninput="spColorFromRgb('overlay')">
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">🌙 Dark Mode</div>
+        <label class="theme-toggle-switch">
+          <input type="checkbox" id="sp-dark-toggle" onchange="toggleStudentDark()">
+          <span class="theme-toggle-slider"></span>
+        </label>
+      </div>
+
+      <div style="display:flex;align-items:flex-end;">
+        <button class="btn btn-secondary btn-sm" onclick="resetStudentTheme()">↺ Zurücksetzen</button>
+      </div>
+
+    </div>
+  </div>
+
   <div class="motiv-box mb-20">
     <div style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--gold-light);margin-bottom:8px;">✨ Dein täglicher Mutmacher</div>
     <div class="motiv-loading" id="motiv-quote">✨ Dein persönlicher Mutmacher erscheint gleich…</div>
@@ -850,7 +922,10 @@ function startRealtimeListeners() {
 
   onValue(ref(db, 'redeemLog'), snap => {
     const data = snap.val() || {};
-    state.redeemLog = Object.values(data).reverse();
+    // ID mitspeichern damit wir einzelne Einträge löschen können
+    state.redeemLog = Object.entries(data)
+      .map(([id, entry]) => ({ ...entry, _id: id }))
+      .reverse();
     reRender();
   });
 }
@@ -1658,13 +1733,57 @@ async function redeemMilestone(id) {
 // REDEEM LOG
 // ============================================================
 function renderRedeemLog() {
-  const el=document.getElementById('redeem-log-list');
+  const el = document.getElementById('redeem-log-list');
   if (!el) return;
-  if (!state.redeemLog.length) { el.innerHTML='<div class="text-muted">Noch keine Belohnungen eingelöst.</div>'; return; }
-  el.innerHTML='';
-  state.redeemLog.slice(0,20).forEach(entry => {
-    el.innerHTML+=`<div class="redeem-log-item"><span style="font-size:20px;">${entry.rewardIcon}</span><div style="flex:1"><b>${entry.studentName}</b> hat <b>${entry.rewardName}</b> eingelöst</div><span style="font-size:11px;color:var(--text-muted);">${formatDate(entry.date)}</span></div>`;
+  if (!state.redeemLog.length) {
+    el.innerHTML = '<div class="text-muted">Noch keine Belohnungen eingelöst.</div>';
+    return;
+  }
+  el.innerHTML = '';
+  state.redeemLog.slice(0, 50).forEach(entry => {
+    const checked  = entry.checked;
+    const id       = entry._id;
+    const rowStyle = checked
+      ? 'background:#F0FFF6;border-color:#2ECC71;opacity:0.75;'
+      : '';
+    const checkIcon = checked ? '✅' : '☐';
+    const checkTitle = checked ? 'Als ausstehend markieren' : 'Als ausgehändigt abhaken';
+
+    el.innerHTML += `
+      <div class="redeem-log-item" style="${rowStyle}">
+        <span style="font-size:20px;">${entry.rewardIcon || '🎁'}</span>
+        <div style="flex:1;min-width:0;">
+          <b>${entry.studentName}</b> — <b>${entry.rewardName}</b>
+          ${checked ? '<span style="font-size:11px;color:#2ECC71;font-weight:700;margin-left:4px;">✓ Ausgehändigt</span>' : ''}
+          <div style="font-size:11px;color:var(--text-muted);">${formatDate(entry.date)}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button title="${checkTitle}"
+            onclick="toggleRedeemCheck('${id}', ${!checked})"
+            style="height:32px;padding:0 10px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:700;
+              background:${checked ? '#E8F8EF' : '#2ECC71'};color:${checked ? '#2ECC71' : 'white'};">
+            ${checkIcon}
+          </button>
+          <button title="Eintrag löschen"
+            onclick="deleteRedeemEntry('${id}')"
+            style="height:32px;padding:0 10px;border-radius:8px;border:none;cursor:pointer;font-size:14px;
+              background:#FFF0F0;color:#E74C3C;">
+            🗑
+          </button>
+        </div>
+      </div>`;
   });
+}
+
+async function toggleRedeemCheck(id, checked) {
+  await fbUpdate(`redeemLog/${id}`, { checked });
+  showToast(checked ? '✅ Als ausgehändigt markiert!' : '↩ Markierung entfernt', checked ? 'success' : 'info');
+}
+
+async function deleteRedeemEntry(id) {
+  if (!confirm('Eintrag wirklich löschen?')) return;
+  await fbRemove(`redeemLog/${id}`);
+  showToast('🗑 Eintrag gelöscht', 'info');
 }
 
 // ============================================================
@@ -1716,6 +1835,7 @@ async function addReward() {
 // STUDENT VIEW
 // ============================================================
 function renderStudentView() {
+  applyStudentTheme();
   const sid=state.currentUser?.studentId;
   const s=state.students.find(x=>x.id===sid);
   if(!s) return;
@@ -1841,6 +1961,108 @@ function loadMotivation() {
   }
 
   el.textContent = spruch;
+}
+
+// ============================================================
+// SCHÜLER-DARSTELLUNG (Hintergrund/Overlay-Farbe + Dark Mode)
+// ============================================================
+function hex2rgb(hex) {
+  hex = (hex||'').replace('#','');
+  if (hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  const num = parseInt(hex,16)||0;
+  return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
+}
+function rgb2hex(r,g,b) {
+  const clamp = v => Math.max(0,Math.min(255, parseInt(v)||0));
+  return '#' + [r,g,b].map(v=>clamp(v).toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+function isValidHex(hex) { return /^#[0-9A-Fa-f]{6}$/.test(hex||''); }
+
+function studentThemeKey() {
+  return `sp_theme_${state.currentUser?.studentId||'default'}`;
+}
+
+function setSpColorControls(kind, hex) {
+  const rgb = hex2rgb(hex);
+  const c=document.getElementById(`sp-${kind}-color`), h=document.getElementById(`sp-${kind}-hex`),
+        r=document.getElementById(`sp-${kind}-r`), g=document.getElementById(`sp-${kind}-g`), b=document.getElementById(`sp-${kind}-b`);
+  if(c) c.value=hex; if(h) h.value=hex;
+  if(r) r.value=rgb.r; if(g) g.value=rgb.g; if(b) b.value=rgb.b;
+}
+
+function applySpColor(kind, hex) {
+  if(!isValidHex(hex)) return;
+  hex = hex.toUpperCase();
+  setSpColorControls(kind, hex);
+  const vs = document.getElementById('view-student');
+  if (kind==='bg') {
+    vs.style.background = hex;
+  } else {
+    vs.querySelectorAll('.profile-hero,.motiv-box').forEach(el=>el.style.background=hex);
+  }
+  saveStudentTheme();
+}
+
+function spColorFromPicker(kind) { applySpColor(kind, document.getElementById(`sp-${kind}-color`).value); }
+function spColorFromHex(kind) {
+  let hex = document.getElementById(`sp-${kind}-hex`).value.trim();
+  if(hex && !hex.startsWith('#')) hex = '#'+hex;
+  if(isValidHex(hex)) applySpColor(kind, hex);
+}
+function spColorFromRgb(kind) {
+  const r=document.getElementById(`sp-${kind}-r`).value, g=document.getElementById(`sp-${kind}-g`).value, b=document.getElementById(`sp-${kind}-b`).value;
+  applySpColor(kind, rgb2hex(r,g,b));
+}
+
+function toggleStudentDark() {
+  const vs = document.getElementById('view-student');
+  const on = document.getElementById('sp-dark-toggle').checked;
+  vs.classList.toggle('dark-mode', on);
+  saveStudentTheme();
+}
+
+function saveStudentTheme() {
+  const vs = document.getElementById('view-student');
+  if(!vs) return;
+  const theme = {
+    bg: document.getElementById('sp-bg-hex')?.value || null,
+    overlay: document.getElementById('sp-overlay-hex')?.value || null,
+    dark: vs.classList.contains('dark-mode')
+  };
+  try { localStorage.setItem(studentThemeKey(), JSON.stringify(theme)); } catch(e) {}
+}
+
+function applyStudentTheme() {
+  const vs = document.getElementById('view-student');
+  if(!vs) return;
+  let theme = {};
+  try { theme = JSON.parse(localStorage.getItem(studentThemeKey())) || {}; } catch(e) { theme = {}; }
+
+  vs.classList.toggle('dark-mode', !!theme.dark);
+  const dt = document.getElementById('sp-dark-toggle');
+  if(dt) dt.checked = !!theme.dark;
+
+  if (theme.bg && isValidHex(theme.bg)) {
+    vs.style.background = theme.bg;
+    setSpColorControls('bg', theme.bg);
+  } else {
+    vs.style.background = '';
+    setSpColorControls('bg', '#F0F4F8');
+  }
+
+  if (theme.overlay && isValidHex(theme.overlay)) {
+    vs.querySelectorAll('.profile-hero,.motiv-box').forEach(el=>el.style.background=theme.overlay);
+    setSpColorControls('overlay', theme.overlay);
+  } else {
+    vs.querySelectorAll('.profile-hero,.motiv-box').forEach(el=>el.style.background='');
+    setSpColorControls('overlay', '#1B2D4F');
+  }
+}
+
+function resetStudentTheme() {
+  try { localStorage.removeItem(studentThemeKey()); } catch(e) {}
+  applyStudentTheme();
+  showToast('🎨 Darstellung zurückgesetzt','info');
 }
 
 // ============================================================
