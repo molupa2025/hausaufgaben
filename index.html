@@ -359,20 +359,26 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 
 /* ============================================================
    SCHÜLERANSICHT — individuell anpassbarer Hintergrund + Dark Mode
+   #app umschließt Header UND alle Views, daher wird hier skaliert:
+   Hintergrundfarbe -> #app + header (ganze Seite inkl. oberer Rand)
+   Overlay-Farbe    -> alle Kästen (.card, .profile-hero, .motiv-box)
 ============================================================ */
-#view-student {
+#app {
+  min-height:100vh;
   background:var(--bg);
-  border-radius:20px;
-  padding:10px;
+  transition:background-color 0.3s ease;
+}
+header, .card, .profile-hero, .motiv-box {
   transition:background-color 0.3s ease, color 0.3s ease;
 }
-#view-student.dark-mode {
+#app.student-dark-mode {
   --bg: #12161f;
   --card: #1c2230;
   --text: #EAEDF5;
   --text-muted: #9AA5B8;
   --border: #2b3245;
-  --navy: #C9D6EE;
+  --navy: #1a2233;
+  --navy-light: #26314a;
 }
 .color-picker-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .color-picker-row input[type=color] { width:36px; height:36px; padding:0; border:2px solid var(--border); border-radius:8px; cursor:pointer; background:none; }
@@ -649,47 +655,6 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 <!-- SCHÜLER-ANSICHT -->
 <div id="view-student" class="view">
 
-  <div class="card mb-20" id="sp-theme-card">
-    <div class="card-title">🎨 Darstellung anpassen</div>
-    <div style="display:flex;flex-wrap:wrap;gap:24px;">
-
-      <div>
-        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">Hintergrundfarbe</div>
-        <div class="color-picker-row">
-          <input type="color" id="sp-bg-color" value="#F0F4F8" oninput="spColorFromPicker('bg')" title="Farbwähler">
-          <input type="text" id="sp-bg-hex" value="#F0F4F8" maxlength="7" oninput="spColorFromHex('bg')" style="text-transform:uppercase;">
-          <span class="rgb-label">R</span><input type="number" id="sp-bg-r" min="0" max="255" value="240" oninput="spColorFromRgb('bg')">
-          <span class="rgb-label">G</span><input type="number" id="sp-bg-g" min="0" max="255" value="244" oninput="spColorFromRgb('bg')">
-          <span class="rgb-label">B</span><input type="number" id="sp-bg-b" min="0" max="255" value="248" oninput="spColorFromRgb('bg')">
-        </div>
-      </div>
-
-      <div>
-        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">Overlay-Farbe (Profil &amp; Mutmacher)</div>
-        <div class="color-picker-row">
-          <input type="color" id="sp-overlay-color" value="#1B2D4F" oninput="spColorFromPicker('overlay')" title="Farbwähler">
-          <input type="text" id="sp-overlay-hex" value="#1B2D4F" maxlength="7" oninput="spColorFromHex('overlay')" style="text-transform:uppercase;">
-          <span class="rgb-label">R</span><input type="number" id="sp-overlay-r" min="0" max="255" value="27" oninput="spColorFromRgb('overlay')">
-          <span class="rgb-label">G</span><input type="number" id="sp-overlay-g" min="0" max="255" value="45" oninput="spColorFromRgb('overlay')">
-          <span class="rgb-label">B</span><input type="number" id="sp-overlay-b" min="0" max="255" value="79" oninput="spColorFromRgb('overlay')">
-        </div>
-      </div>
-
-      <div>
-        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">🌙 Dark Mode</div>
-        <label class="theme-toggle-switch">
-          <input type="checkbox" id="sp-dark-toggle" onchange="toggleStudentDark()">
-          <span class="theme-toggle-slider"></span>
-        </label>
-      </div>
-
-      <div style="display:flex;align-items:flex-end;">
-        <button class="btn btn-secondary btn-sm" onclick="resetStudentTheme()">↺ Zurücksetzen</button>
-      </div>
-
-    </div>
-  </div>
-
   <div class="motiv-box mb-20">
     <div style="font-family:'Fredoka One',cursive;font-size:14px;color:var(--gold-light);margin-bottom:8px;">✨ Dein täglicher Mutmacher</div>
     <div class="motiv-loading" id="motiv-quote">✨ Dein persönlicher Mutmacher erscheint gleich…</div>
@@ -737,6 +702,48 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
     <div class="card-title">🏫 Klassen-Belohnungspfad</div>
     <div class="gap-12 mb-20"><div><div class="stat-val" id="sp-class-pts">0</div><div class="text-muted" style="font-size:12px;">Klassenpunkte (kumuliert)</div></div></div>
     <div class="milestone-path" id="sp-milestone-path"><div class="milestone-connector"></div></div>
+  </div>
+
+  <div class="card mb-20" id="sp-theme-card">
+    <div class="card-title">🎨 Darstellung anpassen</div>
+    <div style="display:flex;flex-wrap:wrap;gap:24px;">
+
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">Hintergrundfarbe (ganze Seite)</div>
+        <div class="color-picker-row">
+          <input type="color" id="sp-bg-color" value="#F0F4F8" oninput="spColorFromPicker('bg')" title="Farbwähler">
+          <input type="text" id="sp-bg-hex" value="#F0F4F8" maxlength="7" oninput="spColorFromHex('bg')" style="text-transform:uppercase;">
+          <span class="rgb-label">R</span><input type="number" id="sp-bg-r" min="0" max="255" value="240" oninput="spColorFromRgb('bg')">
+          <span class="rgb-label">G</span><input type="number" id="sp-bg-g" min="0" max="255" value="244" oninput="spColorFromRgb('bg')">
+          <span class="rgb-label">B</span><input type="number" id="sp-bg-b" min="0" max="255" value="248" oninput="spColorFromRgb('bg')">
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">Overlay-Farbe (alle Kästen)</div>
+        <div class="color-picker-row">
+          <input type="color" id="sp-overlay-color" value="#1B2D4F" oninput="spColorFromPicker('overlay')" title="Farbwähler">
+          <input type="text" id="sp-overlay-hex" value="#1B2D4F" maxlength="7" oninput="spColorFromHex('overlay')" style="text-transform:uppercase;">
+          <span class="rgb-label">R</span><input type="number" id="sp-overlay-r" min="0" max="255" value="27" oninput="spColorFromRgb('overlay')">
+          <span class="rgb-label">G</span><input type="number" id="sp-overlay-g" min="0" max="255" value="45" oninput="spColorFromRgb('overlay')">
+          <span class="rgb-label">B</span><input type="number" id="sp-overlay-b" min="0" max="255" value="79" oninput="spColorFromRgb('overlay')">
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">🌙 Dark Mode</div>
+        <label class="theme-toggle-switch">
+          <input type="checkbox" id="sp-dark-toggle" onchange="toggleStudentDark()">
+          <span class="theme-toggle-slider"></span>
+        </label>
+      </div>
+
+      <div style="display:flex;align-items:flex-end;">
+        <button class="btn btn-secondary btn-sm" onclick="resetStudentTheme()">↺ Zurücksetzen</button>
+      </div>
+
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">Im Dark Mode sind eigene Farben deaktiviert und ein passendes dunkles Farbschema wird automatisch verwendet.</div>
   </div>
 </div>
 
@@ -987,6 +994,7 @@ document.addEventListener('keydown', e => {
 async function doLogout() {
   await fb().signOut(fb().auth);
   state.currentUser = null;
+  resetGlobalStudentTheming();
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').classList.add('visible');
 }
@@ -994,6 +1002,7 @@ async function doLogout() {
 function startApp() {
   document.getElementById('login-screen').classList.remove('visible');
   document.getElementById('app').style.display = 'block';
+  resetGlobalStudentTheming();
   const role = state.currentUser.role;
   const badgeIcon = role === 'admin' ? '🛡️' : role === 'teacher' ? '👩‍🏫' : '🎒';
   document.getElementById('header-user-badge').textContent = badgeIcon + ' ' + state.currentUser.name;
@@ -1965,7 +1974,15 @@ function loadMotivation() {
 
 // ============================================================
 // SCHÜLER-DARSTELLUNG (Hintergrund/Overlay-Farbe + Dark Mode)
+// Hintergrundfarbe -> gesamte Seite (#app) + Header (oberer Rand)
+// Overlay-Farbe    -> alle Kästen in der Schüleransicht
+//                      (.card, .profile-hero, .motiv-box)
+// Im Dark Mode werden eigene Farben deaktiviert und durch ein
+// vordefiniertes dunkles Farbschema ersetzt.
 // ============================================================
+const DARK_PRESET_BG = '#12161F';
+const DARK_PRESET_OVERLAY = '#1C2230';
+
 function hex2rgb(hex) {
   hex = (hex||'').replace('#','');
   if (hex.length===3) hex = hex.split('').map(c=>c+c).join('');
@@ -1990,16 +2007,33 @@ function setSpColorControls(kind, hex) {
   if(r) r.value=rgb.r; if(g) g.value=rgb.g; if(b) b.value=rgb.b;
 }
 
+function setThemeControlsDisabled(disabled) {
+  ['bg','overlay'].forEach(kind=>{
+    ['color','hex','r','g','b'].forEach(suffix=>{
+      const el = document.getElementById(`sp-${kind}-${suffix}`);
+      if(el) el.disabled = disabled;
+    });
+  });
+}
+
+function applyBgColor(hex) {
+  const appEl = document.getElementById('app');
+  const header = document.querySelector('header');
+  if (appEl) appEl.style.background = hex || '';
+  if (header) header.style.background = hex || '';
+}
+function applyOverlayColor(hex) {
+  document.querySelectorAll('#view-student .card, #view-student .profile-hero, #view-student .motiv-box')
+    .forEach(el=>el.style.background = hex || '');
+}
+
 function applySpColor(kind, hex) {
   if(!isValidHex(hex)) return;
+  const appEl = document.getElementById('app');
+  if (appEl && appEl.classList.contains('student-dark-mode')) return; // im Dark Mode nicht editierbar
   hex = hex.toUpperCase();
   setSpColorControls(kind, hex);
-  const vs = document.getElementById('view-student');
-  if (kind==='bg') {
-    vs.style.background = hex;
-  } else {
-    vs.querySelectorAll('.profile-hero,.motiv-box').forEach(el=>el.style.background=hex);
-  }
+  if (kind==='bg') applyBgColor(hex); else applyOverlayColor(hex);
   saveStudentTheme();
 }
 
@@ -2015,47 +2049,47 @@ function spColorFromRgb(kind) {
 }
 
 function toggleStudentDark() {
-  const vs = document.getElementById('view-student');
-  const on = document.getElementById('sp-dark-toggle').checked;
-  vs.classList.toggle('dark-mode', on);
-  saveStudentTheme();
+  const dark = document.getElementById('sp-dark-toggle').checked;
+  let theme = {};
+  try { theme = JSON.parse(localStorage.getItem(studentThemeKey())) || {}; } catch(e) {}
+  theme.dark = dark;
+  try { localStorage.setItem(studentThemeKey(), JSON.stringify(theme)); } catch(e) {}
+  applyStudentTheme();
 }
 
 function saveStudentTheme() {
-  const vs = document.getElementById('view-student');
-  if(!vs) return;
-  const theme = {
-    bg: document.getElementById('sp-bg-hex')?.value || null,
-    overlay: document.getElementById('sp-overlay-hex')?.value || null,
-    dark: vs.classList.contains('dark-mode')
-  };
+  let theme = {};
+  try { theme = JSON.parse(localStorage.getItem(studentThemeKey())) || {}; } catch(e) {}
+  theme.bg = document.getElementById('sp-bg-hex')?.value || null;
+  theme.overlay = document.getElementById('sp-overlay-hex')?.value || null;
+  theme.dark = false; // Farbeingaben sind nur außerhalb des Dark Mode möglich
   try { localStorage.setItem(studentThemeKey(), JSON.stringify(theme)); } catch(e) {}
 }
 
 function applyStudentTheme() {
-  const vs = document.getElementById('view-student');
-  if(!vs) return;
+  const appEl = document.getElementById('app');
+  if(!appEl) return;
   let theme = {};
   try { theme = JSON.parse(localStorage.getItem(studentThemeKey())) || {}; } catch(e) { theme = {}; }
 
-  vs.classList.toggle('dark-mode', !!theme.dark);
+  const dark = !!theme.dark;
+  appEl.classList.toggle('student-dark-mode', dark);
   const dt = document.getElementById('sp-dark-toggle');
-  if(dt) dt.checked = !!theme.dark;
+  if(dt) dt.checked = dark;
+  setThemeControlsDisabled(dark);
 
-  if (theme.bg && isValidHex(theme.bg)) {
-    vs.style.background = theme.bg;
-    setSpColorControls('bg', theme.bg);
+  if (dark) {
+    applyBgColor('');
+    applyOverlayColor('');
+    setSpColorControls('bg', DARK_PRESET_BG);
+    setSpColorControls('overlay', DARK_PRESET_OVERLAY);
   } else {
-    vs.style.background = '';
-    setSpColorControls('bg', '#F0F4F8');
-  }
-
-  if (theme.overlay && isValidHex(theme.overlay)) {
-    vs.querySelectorAll('.profile-hero,.motiv-box').forEach(el=>el.style.background=theme.overlay);
-    setSpColorControls('overlay', theme.overlay);
-  } else {
-    vs.querySelectorAll('.profile-hero,.motiv-box').forEach(el=>el.style.background='');
-    setSpColorControls('overlay', '#1B2D4F');
+    const bg = (theme.bg && isValidHex(theme.bg)) ? theme.bg : '#F0F4F8';
+    const overlay = (theme.overlay && isValidHex(theme.overlay)) ? theme.overlay : '#1B2D4F';
+    applyBgColor(theme.bg && isValidHex(theme.bg) ? theme.bg : '');
+    applyOverlayColor(theme.overlay && isValidHex(theme.overlay) ? theme.overlay : '');
+    setSpColorControls('bg', bg);
+    setSpColorControls('overlay', overlay);
   }
 }
 
@@ -2063,6 +2097,14 @@ function resetStudentTheme() {
   try { localStorage.removeItem(studentThemeKey()); } catch(e) {}
   applyStudentTheme();
   showToast('🎨 Darstellung zurückgesetzt','info');
+}
+
+function resetGlobalStudentTheming() {
+  const appEl = document.getElementById('app');
+  const header = document.querySelector('header');
+  if (appEl) { appEl.classList.remove('student-dark-mode'); appEl.style.background=''; }
+  if (header) header.style.background='';
+  document.querySelectorAll('.card, .profile-hero, .motiv-box').forEach(el=>el.style.background='');
 }
 
 // ============================================================
