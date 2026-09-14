@@ -207,16 +207,8 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
   .mobile-nav-btn.active { color:var(--gold); }
   .mobile-nav-btn .nav-icon { font-size:22px; line-height:1; }
 
-  /* Abmelden-Button im Header auf Mobile zu einem kompakten Icon verkleinern
-     statt ihn komplett zu verstecken (er war vorher unerreichbar) */
-  .header-logout {
-    display:flex !important;
-    padding:0 !important; width:34px; height:34px;
-    align-items:center; justify-content:center;
-    font-size:0 !important; border-radius:50% !important;
-    flex-shrink:0;
-  }
-  .header-logout::before { content:'🚪'; font-size:16px; }
+  /* Abmelden-Button im Header ausblenden — stattdessen in Mobile-Nav */
+  .header-logout { display:none; }
 
   /* Sections die per Mobile-Nav gesteuert werden */
   .mobile-section { display:none; }
@@ -947,7 +939,7 @@ function startRealtimeListeners() {
 
 function reRender() {
   if (!state.currentUser) return;
-  if (state.currentUser.role === 'teacher' || state.currentUser.role === 'admin') render();
+  if (state.currentUser.role === 'teacher') render();
   else renderStudentView();
 }
 
@@ -977,21 +969,7 @@ async function doLogin() {
       state.currentUser = { uid: cred.user.uid, email, role: 'teacher', name: 'Lehrkraft' };
       startApp();
     } else {
-      // Schülerliste kommt per Realtime-Listener aus Firebase und ist bei einem
-      // frischen Seitenaufruf (v.a. auf Schülergeräten mit noch leerem Cache)
-      // evtl. noch nicht geladen. Daher kurz warten statt sofort abzubrechen.
-      let student = state.students.find(s => s.email === email);
-      if (!student) {
-        btn.textContent = 'Schülerdaten werden geladen…';
-        student = await new Promise(resolve => {
-          let tries = 0;
-          const iv = setInterval(() => {
-            const found = state.students.find(s => s.email === email);
-            tries++;
-            if (found || tries > 50) { clearInterval(iv); resolve(found || null); }
-          }, 100);
-        });
-      }
+      const student = state.students.find(s => s.email === email);
       if (student) {
         state.currentUser = { uid: cred.user.uid, email, role: 'student', name: `${student.first} ${student.last}`, studentId: student.id };
         startApp();
