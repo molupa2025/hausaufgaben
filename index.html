@@ -245,6 +245,7 @@ main { max-width:1200px; margin:0 auto; padding:32px 24px; }
 .hw-check-item { display:flex; align-items:center; justify-content:space-between; background:var(--bg); border-radius:10px; padding:12px 14px; border:2px solid var(--border); transition:border-color 0.2s; }
 .hw-check-item.done    { border-color:var(--green); background:#F0FFF6; }
 .hw-check-item.missing { border-color:var(--red);   background:#FFF5F5; }
+.hw-check-item.unchecked { border-color:var(--border); background:var(--bg); }
 .hw-student-name { font-weight:600; font-size:14px; }
 .hw-actions { display:flex; gap:6px; }
 .btn-hw { width:34px; height:34px; border-radius:8px; border:none; cursor:pointer; font-size:16px; transition:transform 0.1s,opacity 0.2s; display:flex; align-items:center; justify-content:center; }
@@ -1002,7 +1003,20 @@ async function doLogin() {
       }
     }
   } catch(e) {
-    err.textContent = '❌ Ungültige E-Mail oder falsches Passwort.';
+    console.error('Login-Fehler:', e);
+    const map = {
+      'auth/invalid-email':            '❌ Ungültige E-Mail-Adresse.',
+      'auth/user-not-found':           '❌ Kein Account mit dieser E-Mail gefunden.',
+      'auth/wrong-password':           '❌ Falsches Passwort.',
+      'auth/invalid-credential':       '❌ E-Mail oder Passwort ist falsch.',
+      'auth/invalid-login-credentials':'❌ E-Mail oder Passwort ist falsch.',
+      'auth/too-many-requests':        '❌ Zu viele Versuche. Bitte kurz warten und erneut versuchen.',
+      'auth/network-request-failed':   '❌ Keine Verbindung zu Firebase. Internet prüfen.',
+      'auth/user-disabled':            '❌ Dieser Account wurde deaktiviert.',
+      'auth/operation-not-allowed':    '❌ Anmeldung per E-Mail/Passwort ist in der Firebase-Konsole deaktiviert (Authentication → Sign-in method).',
+      'auth/configuration-not-found':  '❌ Firebase-Auth ist für dieses Projekt nicht eingerichtet (Authentication → Sign-in method → E-Mail/Passwort aktivieren).'
+    };
+    err.textContent = map[e.code] || `❌ Fehler: ${e.code || e.message || e}`;
     err.style.display = 'block';
   }
   btn.textContent = 'Anmelden';
@@ -1241,24 +1255,20 @@ function render() {
 function renderStats() {
   document.getElementById('stat-students').textContent = state.students.length;
   const d = document.getElementById('hw-date').value || today();
-  const done = state.students.filter(s => {
-    const st = state.hwStatus[`${s.id}_${d}`];
-    return st === 'done' || st === undefined;
-  }).length;
+  const done = state.students.filter(s => state.hwStatus[`${s.id}_${d}`] === 'done').length;
   document.getElementById('stat-today-done').textContent = done;
   document.getElementById('stat-class-streak').textContent = state.classStreak;
   document.getElementById('stat-class-pts').textContent = state.classPointsTotal;
   if (document.getElementById('class-points-display2'))
     document.getElementById('class-points-display2').textContent = state.classPointsTotal;
 
-  // Gesamt-HW Statistiken für alle Schüler
+  // Gesamt-HW Statistiken für alle Schüler — nur explizit kontrollierte Tage zählen,
+  // unkontrollierte Tage fließen nicht in die Wertung ein
   let totalDone = 0, totalMissing = 0;
   Object.entries(state.hwStatus).forEach(([key, val]) => {
     if (val === 'done') totalDone++;
     else if (val === 'missing') totalMissing++;
   });
-  // Alle nicht explizit gesetzten Einträge zählen als done (Standard)
-  // Wir zeigen nur explizit gesetzte Werte
   if (document.getElementById('stat-total-done'))
     document.getElementById('stat-total-done').textContent = totalDone;
   if (document.getElementById('stat-total-missing'))
@@ -1273,10 +1283,7 @@ function updateClassMeter() {
   const total = state.students.length;
   if (total === 0) { document.getElementById('class-pct-label').textContent = '0%'; document.getElementById('class-meter-fill').style.width = '0%'; return; }
 
-  const done = state.students.filter(s => {
-    const st = state.hwStatus[`${s.id}_${d}`];
-    return st === 'done' || st === undefined;
-  }).length;
+  const done = state.students.filter(s => state.hwStatus[`${s.id}_${d}`] === 'done').length;
   const pct = Math.round((done / total) * 100);
   document.getElementById('class-meter-fill').style.width = pct + '%';
   document.getElementById('class-pct-label').textContent = pct + '%';
@@ -1334,18 +1341,18 @@ function renderHWCheck() {
 
   filtered.forEach(s => {
     const key = `${s.id}_${d}`;
-    const status = state.hwStatus[key];
-    const eff = status === undefined ? 'done' : status;
+    const status = state.hwStatus[key]; // 'done' | 'missing' | undefined = noch nicht kontrolliert
     const div = document.createElement('div');
-    div.className = 'hw-check-item' + (eff === 'done' ? ' done' : ' missing');
+    div.className = 'hw-check-item' + (status === 'done' ? ' done' : status === 'missing' ? ' missing' : ' unchecked');
+    const label = status === 'done' ? '✅ Erledigt' : status === 'missing' ? '❌ Fehlt' : '❔ Noch nicht kontrolliert';
     div.innerHTML = `
       <div>
         <div class="hw-student-name">${s.first} ${s.last}</div>
-        <div style="font-size:11px;color:var(--text-muted)">${eff==='done'?'✅ Erledigt':'❌ Fehlt'}${status===undefined?' <span style="opacity:.6">(Standard)</span>':''}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${label}</div>
       </div>
       <div class="hw-actions">
-        <button class="btn-hw btn-done ${eff==='done'?'':'inactive'}" onclick="markHW('${s.id}','done')" title="Erledigt">✓</button>
-        <button class="btn-hw btn-miss ${eff==='missing'?'':'inactive'}" onclick="markHW('${s.id}','missing')" title="Fehlt">✗</button>
+        <button class="btn-hw btn-done ${status==='done'?'':'inactive'}" onclick="markHW('${s.id}','done')" title="Erledigt">✓</button>
+        <button class="btn-hw btn-miss ${status==='missing'?'':'inactive'}" onclick="markHW('${s.id}','missing')" title="Fehlt">✗</button>
       </div>`;
     grid.appendChild(div);
   });
@@ -1359,13 +1366,14 @@ async function markHW(studentId, newStatus) {
   const student = state.students.find(s => s.id === studentId);
   if (!student) return;
 
-  const prev = state.hwStatus[key];
-  const prevEff = prev === undefined ? 'done' : prev;
+  const prev = state.hwStatus[key]; // 'done' | 'missing' | undefined = noch nicht kontrolliert
+  if (prev === newStatus) return; // schon in diesem Zustand — nichts zu tun
 
   const updates = {};
   const log = [...(student.log || [])];
 
-  if (prevEff === 'done' && newStatus === 'missing') {
+  if (newStatus === 'missing') {
+    // von 'done' ODER von unkontrolliert -> 'missing': Punkt abziehen, Streak zurücksetzen
     updates[`students/${studentId}/points`] = Math.max(0, (student.points||0) - 1);
     updates[`students/${studentId}/streak`] = 0;
     const filtered = log.filter(l => !(l.date === d && l.type === 'hw_done'));
@@ -1373,7 +1381,8 @@ async function markHW(studentId, newStatus) {
     updates[`students/${studentId}/log`] = filtered;
     updates[`hwStatus/${key}`] = 'missing';
     showToast(`❌ ${student.first} -1 Punkt, Streak zurückgesetzt`, 'error');
-  } else if (prevEff === 'missing' && newStatus === 'done') {
+  } else if (newStatus === 'done') {
+    // von 'missing' ODER von unkontrolliert -> 'done': Punkt(e) gutschreiben, Streak erhöhen
     let bonus = 1;
     if ((student.streak||0) >= 4) bonus++;
     if ((student.streak||0) >= 9) bonus++;
@@ -1383,17 +1392,6 @@ async function markHW(studentId, newStatus) {
     const streakMsg = ((student.streak||0)+1) >= 5 ? ` 🔥 ${(student.streak||0)+1}-Streak!` : '';
     filtered.unshift({ type:'hw_done', pts:bonus, text:`Hausaufgaben erledigt${streakMsg}`, date: d });
     updates[`students/${studentId}/log`] = filtered;
-    updates[`hwStatus/${key}`] = 'done';
-    showToast(`✅ ${student.first} +${bonus} Punkt${bonus>1?'e':''}${streakMsg}`, 'success');
-  } else if (prev === undefined && newStatus === 'done') {
-    let bonus = 1;
-    if ((student.streak||0) >= 4) bonus++;
-    if ((student.streak||0) >= 9) bonus++;
-    updates[`students/${studentId}/points`] = (student.points||0) + bonus;
-    updates[`students/${studentId}/streak`] = (student.streak||0) + 1;
-    const streakMsg = ((student.streak||0)+1) >= 5 ? ` 🔥 ${(student.streak||0)+1}-Streak!` : '';
-    log.unshift({ type:'hw_done', pts:bonus, text:`Hausaufgaben bestätigt${streakMsg}`, date: d });
-    updates[`students/${studentId}/log`] = log;
     updates[`hwStatus/${key}`] = 'done';
     showToast(`✅ ${student.first} +${bonus} Punkt${bonus>1?'e':''}${streakMsg}`, 'success');
   }
