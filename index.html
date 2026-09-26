@@ -561,6 +561,14 @@ header, .card, .profile-hero, .motiv-box {
     <div class="card"><div class="card-title">📈 Wochenverlauf</div><canvas id="chart-week" height="220"></canvas></div>
   </div>
 
+  <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+    <label style="font-size:12px;color:var(--text-muted);font-weight:600;">Sortieren nach:</label>
+    <select class="form-input" id="topflop-sort" style="width:auto;font-size:13px;padding:6px 10px;" onchange="renderTopFlop()">
+      <option value="points">Punkten</option>
+      <option value="streak">Streak</option>
+      <option value="rank">Rang</option>
+    </select>
+  </div>
   <div class="grid-2 mb-20">
     <div class="card"><div class="card-title">🏆 Top-Schüler</div><div id="top-students"></div></div>
     <div class="card"><div class="card-title">📉 Flop-Schüler</div><div id="flop-students"></div></div>
@@ -788,7 +796,7 @@ header, .card, .profile-hero, .motiv-box {
 </div>
 <div class="modal-overlay" id="modal-add-reward">
   <div class="modal">
-    <div class="modal-title">🎁 Neue Belohnung</div>
+    <div class="modal-title" id="reward-modal-title">🎁 Neue Belohnung</div>
     <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="new-reward-name" placeholder="Name"></div>
     <div class="form-group"><label class="form-label">Beschreibung</label><input type="text" class="form-input" id="new-reward-desc" placeholder="Kurze Beschreibung"></div>
     <div class="form-group"><label class="form-label">Icon (Emoji)</label><input type="text" class="form-input" id="new-reward-icon" placeholder="🎁" maxlength="4"></div>
@@ -797,7 +805,7 @@ header, .card, .profile-hero, .motiv-box {
       <select class="form-input" id="new-reward-type"><option value="individual">Einzeln (pro Schüler)</option><option value="class">Klasse (Meilenstein)</option></select>
     </div>
     <div class="gap-12 mt-20">
-      <button class="btn btn-primary" onclick="addReward()">Hinzufügen</button>
+      <button class="btn btn-primary" id="reward-save-btn" onclick="saveReward()">Hinzufügen</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-add-reward')">Abbrechen</button>
     </div>
   </div>
@@ -805,8 +813,13 @@ header, .card, .profile-hero, .motiv-box {
 <div class="modal-overlay" id="modal-adjust-points">
   <div class="modal">
     <div class="modal-title" id="adjust-modal-title">Punkte anpassen</div>
-    <div class="form-group"><label class="form-label">Anzahl Punkte</label><input type="number" class="form-input" id="adjust-points-val" placeholder="z.B. 3" min="1"></div>
+    <div class="form-group"><label class="form-label">Anzahl Punkte (optional)</label><input type="number" class="form-input" id="adjust-points-val" placeholder="leer lassen = unverändert" min="1"></div>
     <div class="form-group"><label class="form-label">Grund (optional)</label><input type="text" class="form-input" id="adjust-points-reason" placeholder="z.B. Extra-Einsatz"></div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+    <div class="form-group"><label class="form-label">Streak festlegen (optional)</label><input type="number" class="form-input" id="adjust-streak-val" placeholder="leer lassen = unverändert" min="0"></div>
+    <div class="form-group"><label class="form-label">Rang festlegen (optional)</label>
+      <select class="form-input" id="adjust-rank-val"><option value="">— nicht ändern —</option></select>
+    </div>
     <div class="gap-12 mt-20">
       <button class="btn btn-primary" id="adjust-confirm-btn">Anpassen</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-adjust-points')">Abbrechen</button>
@@ -829,6 +842,17 @@ let RANKS = [
   { name:'Gold',   min:75,  max:99,  cls:'rank-gold',   icon:'🥇' },
   { name:'Platin', min:100, max:Infinity, cls:'rank-platin', icon:'💎' },
 ];
+// Der Rang basiert NICHT auf den aktuell verfügbaren (ausgebbaren) Punkten,
+// sondern auf der höchsten je erreichten Punktzahl (rankPoints). So behält
+// ein Schüler seinen Rang, auch wenn er Punkte für Belohnungen ausgibt.
+function displayRankValue(s) {
+  return Math.max(s.rankPoints||0, s.points||0);
+}
+// Nächster rankPoints-Wert nach einer Punkteänderung: steigt automatisch mit,
+// sinkt aber nie von selbst (nur ein gezieltes "Rang festlegen" kann ihn senken).
+function nextRankPoints(student, newPoints) {
+  return Math.max(student.rankPoints||0, student.points||0, newPoints||0);
+}
 function getRank(points) {
   const sorted = [...RANKS].sort((a,b) => a.min - b.min);
   return sorted.slice().reverse().find(r => points >= r.min) || sorted[0];
@@ -1338,6 +1362,7 @@ async function awardClassBonus(date) {
   state.students.forEach(s => {
     const newPts = (s.points || 0) + perStudent;
     updates[`students/${s.id}/points`] = newPts;
+    updates[`students/${s.id}/rankPoints`] = nextRankPoints(s, newPts);
     const log = s.log || [];
     const logEntry = perStudent > 0
       ? { type:'class', pts:perStudent, text:`Klassenbonus (90%+ Klasse) +${perStudent}`, date }
@@ -1403,6 +1428,7 @@ async function markHW(studentId, newStatus) {
   if (newStatus === 'missing') {
     // von 'done' ODER von unkontrolliert -> 'missing': Punkt abziehen, Streak zurücksetzen
     updates[`students/${studentId}/points`] = Math.max(0, (student.points||0) - 1);
+    updates[`students/${studentId}/rankPoints`] = nextRankPoints(student, Math.max(0,(student.points||0)-1));
     updates[`students/${studentId}/streak`] = 0;
     const filtered = log.filter(l => !(l.date === d && l.type === 'hw_done'));
     filtered.unshift({ type:'hw_missing', pts:-1, text:'Hausaufgaben vergessen', date: d });
@@ -1415,6 +1441,7 @@ async function markHW(studentId, newStatus) {
     if ((student.streak||0) >= 4) bonus++;
     if ((student.streak||0) >= 9) bonus++;
     updates[`students/${studentId}/points`] = (student.points||0) + bonus;
+    updates[`students/${studentId}/rankPoints`] = nextRankPoints(student, (student.points||0)+bonus);
     updates[`students/${studentId}/streak`] = (student.streak||0) + 1;
     const filtered = log.filter(l => !(l.date === d && l.type === 'hw_missing'));
     const streakMsg = ((student.streak||0)+1) >= 5 ? ` 🔥 ${(student.streak||0)+1}-Streak!` : '';
@@ -1438,7 +1465,7 @@ function renderLeaderboard() {
   sorted.forEach((s,i) => {
     const rc = i===0?'gold':i===1?'silver':i===2?'bronze':'';
     const medals = ['🥇','🥈','🥉'];
-    const rank = getRank(s.points||0);
+    const rank = getRank(displayRankValue(s));
     lb.innerHTML += `<div class="lb-row">
       <div class="lb-rank ${rc}">${i<3?medals[i]:i+1}</div>
       <div class="lb-name">${s.first} ${s.last}</div>
@@ -1450,16 +1477,23 @@ function renderLeaderboard() {
 }
 
 function renderTopFlop() {
-  const sorted = [...state.students].sort((a,b) => (b.points||0)-(a.points||0));
+  const sortBy = document.getElementById('topflop-sort')?.value || 'points';
+  const keyFn = sortBy==='streak' ? (s=>s.streak||0)
+              : sortBy==='rank'   ? (s=>displayRankValue(s))
+              : (s=>s.points||0);
+  const fmtVal = (s) => sortBy==='streak' ? `🔥 ${s.streak||0}`
+                       : sortBy==='rank'   ? `${getRank(displayRankValue(s)).icon} ${getRank(displayRankValue(s)).name}`
+                       : `${s.points||0} ⭐`;
+  const sorted = [...state.students].sort((a,b) => keyFn(b)-keyFn(a));
   const top = document.getElementById('top-students');
   const flop = document.getElementById('flop-students');
   if (!top) return;
   top.innerHTML = ''; flop.innerHTML = '';
   sorted.slice(0,3).forEach((s,i) => {
-    top.innerHTML += `<div class="topflop-row top"><span style="font-family:'Fredoka One',cursive;color:var(--green);">${['🥇','🥈','🥉'][i]}</span><span style="flex:1;font-weight:600;">${s.first} ${s.last}</span><span style="font-family:'Fredoka One',cursive;color:var(--gold);">${s.points||0} ⭐</span>${(s.streak||0)>0?`<span style="font-size:12px;color:#FF6B35;">🔥${s.streak}</span>`:''}</div>`;
+    top.innerHTML += `<div class="topflop-row top"><span style="font-family:'Fredoka One',cursive;color:var(--green);">${['🥇','🥈','🥉'][i]}</span><span style="flex:1;font-weight:600;">${s.first} ${s.last}</span><span style="font-family:'Fredoka One',cursive;color:var(--gold);">${fmtVal(s)}</span>${sortBy!=='streak' && (s.streak||0)>0?`<span style="font-size:12px;color:#FF6B35;">🔥${s.streak}</span>`:''}</div>`;
   });
   [...sorted].reverse().slice(0,3).forEach(s => {
-    flop.innerHTML += `<div class="topflop-row flop"><span style="font-size:18px;">📉</span><span style="flex:1;font-weight:600;">${s.first} ${s.last}</span><span style="font-family:'Fredoka One',cursive;color:var(--red);">${s.points||0} ⭐</span></div>`;
+    flop.innerHTML += `<div class="topflop-row flop"><span style="font-size:18px;">📉</span><span style="flex:1;font-weight:600;">${s.first} ${s.last}</span><span style="font-family:'Fredoka One',cursive;color:var(--red);">${fmtVal(s)}</span></div>`;
   });
   if (sorted.length===0) { top.innerHTML='<div class="text-muted">Keine Schüler.</div>'; flop.innerHTML='<div class="text-muted">Keine Schüler.</div>'; }
 }
@@ -1677,7 +1711,7 @@ function renderStudentManage() {
       <div style="flex:1;min-width:120px;">
         <div style="font-weight:700;">${s.first} ${s.last}</div>
         <div style="font-size:11px;color:var(--text-muted);">📧 ${s.email || s.username || '—'}</div>
-        <div style="font-size:11px;margin-top:2px;">${getRankBadgeHTML(s.points||0)} ${s.points||0} ⭐ | 🔥${s.streak||0}</div>
+        <div style="font-size:11px;margin-top:2px;">${getRankBadgeHTML(displayRankValue(s))} ${s.points||0} ⭐ | 🔥${s.streak||0}</div>
         <div style="font-size:11px;margin-top:2px;color:var(--text-muted);">📚 HA abgegeben: <b style='color:#2ECC71'>${Object.entries(state.hwStatus).filter(([k,v])=>k.startsWith(s.id+'_')&&v==='done').length}</b> &nbsp;❌ gefehlt: <b style='color:#E74C3C'>${Object.entries(state.hwStatus).filter(([k,v])=>k.startsWith(s.id+'_')&&v==='missing').length}</b></div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -1696,19 +1730,56 @@ function openAdjustModal(id, dir) {
   document.getElementById('adjust-modal-title').textContent = dir>0?`➕ Punkte hinzufügen – ${s.first} ${s.last}`:`➖ Punkte abziehen – ${s.first} ${s.last}`;
   document.getElementById('adjust-points-val').value='';
   document.getElementById('adjust-points-reason').value='';
+  document.getElementById('adjust-streak-val').value='';
+  document.getElementById('adjust-streak-val').placeholder = `leer lassen = unverändert (aktuell: ${s.streak||0})`;
+  const rankSel = document.getElementById('adjust-rank-val');
+  const currentRank = getRank(displayRankValue(s));
+  rankSel.innerHTML = '<option value="">— nicht ändern —</option>' +
+    RANKS.map((r,i)=>`<option value="${i}"${r.name===currentRank.name?' selected':''}>${r.icon} ${r.name}</option>`).join('');
+  rankSel.value = ''; // Standard: nichts ändern, auch wenn oben der aktuelle Rang markiert ist
   document.getElementById('adjust-confirm-btn').onclick = doAdjustPoints;
   openModal('modal-adjust-points');
 }
 async function doAdjustPoints() {
-  const val=parseInt(document.getElementById('adjust-points-val').value);
-  const reason=document.getElementById('adjust-points-reason').value.trim()||'Manuelle Anpassung durch Lehrer';
-  if (!val||val<1) { showToast('❗ Bitte eine gültige Zahl eingeben.','error'); return; }
   const s=state.students.find(x=>x.id===adjustTargetId);
-  const delta=adjustDirection*val;
-  const newPoints=Math.max(0,(s.points||0)+delta);
-  const log=[{ type:'manual', pts:delta, text:reason, date:today() }, ...(s.log||[])];
-  await fbUpdate(`students/${adjustTargetId}`, { points:newPoints, log });
-  showToast(`${delta>0?'⬆️':'⬇️'} ${s.first}: ${delta>0?'+':''}${delta} Punkte`,'info');
+  if (!s) return;
+
+  const valRaw = document.getElementById('adjust-points-val').value;
+  const reason = document.getElementById('adjust-points-reason').value.trim()||'Manuelle Anpassung durch Lehrer';
+  const streakRaw = document.getElementById('adjust-streak-val').value;
+  const rankSelVal = document.getElementById('adjust-rank-val').value;
+
+  const updates = {};
+  const msgs = [];
+
+  if (valRaw !== '') {
+    const val = parseInt(valRaw);
+    if (!val || val < 1) { showToast('❗ Bitte eine gültige Punktzahl eingeben (oder leer lassen).','error'); return; }
+    const delta = adjustDirection*val;
+    const newPoints = Math.max(0,(s.points||0)+delta);
+    updates.points = newPoints;
+    updates.rankPoints = nextRankPoints(s, newPoints);
+    updates.log = [{ type:'manual', pts:delta, text:reason, date:today() }, ...(s.log||[])];
+    msgs.push(`${delta>0?'+':''}${delta} Punkte`);
+  }
+
+  if (streakRaw !== '') {
+    updates.streak = Math.max(0, parseInt(streakRaw)||0);
+    msgs.push(`🔥 Streak: ${updates.streak}`);
+  }
+
+  if (rankSelVal !== '') {
+    const chosen = RANKS[parseInt(rankSelVal)];
+    if (chosen) {
+      updates.rankPoints = chosen.min; // gezielte Rang-Festlegung überschreibt den automatischen Wert bewusst
+      msgs.push(`🏅 Rang: ${chosen.icon} ${chosen.name}`);
+    }
+  }
+
+  if (!Object.keys(updates).length) { showToast('❗ Bitte mindestens ein Feld ausfüllen.','error'); return; }
+
+  await fbUpdate(`students/${adjustTargetId}`, updates);
+  showToast(`✅ ${s.first}: ${msgs.join(', ')}`,'info');
   closeModal('modal-adjust-points');
 }
 async function changeTeacherPassword() {
@@ -1747,6 +1818,7 @@ function renderRewardManage() {
       <span class="log-icon">${r.icon}</span>
       <div class="log-text"><b>${r.name}</b> — ${r.desc}<br><span style="font-size:11px;color:var(--text-muted)">${r.type==='class'?'🏫 Klassenmeilenstein':'👤 Einzelbelohnung'}</span></div>
       <span class="log-pts positive">${r.cost} ⭐</span>
+      <button class="btn btn-secondary btn-sm" onclick="openEditRewardModal('${r.id}')">✏️</button>
       <button class="btn btn-danger btn-sm" onclick="removeReward('${r.id}')">🗑</button>
     </div>`;
   });
@@ -1871,17 +1943,47 @@ async function addStudent() {
   }
 }
 
+let editRewardId = null;
+
 function openAddRewardModal() {
+  editRewardId = null;
+  document.getElementById('reward-modal-title').textContent = '🎁 Neue Belohnung';
+  document.getElementById('reward-save-btn').textContent = 'Hinzufügen';
   ['new-reward-name','new-reward-desc','new-reward-icon','new-reward-cost'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('new-reward-type').value = 'individual';
   openModal('modal-add-reward');
 }
-async function addReward() {
+
+function openEditRewardModal(id) {
+  const r = state.rewards.find(x=>x.id===id);
+  if (!r) return;
+  editRewardId = id;
+  document.getElementById('reward-modal-title').textContent = '✏️ Belohnung bearbeiten';
+  document.getElementById('reward-save-btn').textContent = 'Speichern';
+  document.getElementById('new-reward-name').value = r.name||'';
+  document.getElementById('new-reward-desc').value = r.desc||'';
+  document.getElementById('new-reward-icon').value = r.icon||'';
+  document.getElementById('new-reward-cost').value = r.cost||'';
+  document.getElementById('new-reward-type').value = r.type||'individual';
+  openModal('modal-add-reward');
+}
+
+async function saveReward() {
   const name=document.getElementById('new-reward-name').value.trim();
   const desc=document.getElementById('new-reward-desc').value.trim();
   const icon=document.getElementById('new-reward-icon').value.trim()||'🎁';
   const cost=parseInt(document.getElementById('new-reward-cost').value);
   const type=document.getElementById('new-reward-type').value;
   if(!name||!cost||cost<1) { showToast('❗ Bitte Name und Kosten angeben.','error'); return; }
+
+  if (editRewardId) {
+    await fbUpdate(`rewards/${editRewardId}`, { name, desc, icon, cost, type });
+    closeModal('modal-add-reward');
+    showToast(`✏️ Belohnung "${name}" aktualisiert!`,'success');
+    editRewardId = null;
+    return;
+  }
+
   const newRef=fb().push(fb().ref(fb().db,'rewards'));
   await fb().set(newRef,{ name, desc, icon, cost, type, redeemed:false });
   closeModal('modal-add-reward');
@@ -1901,11 +2003,11 @@ function renderStudentView() {
   const pos=sorted.findIndex(x=>x.id===sid)+1;
   const avg=state.students.length>0?Math.round(state.students.reduce((sum,x)=>sum+(x.points||0),0)/state.students.length):0;
   const maxPts=Math.max(...state.students.map(x=>x.points||0),avg,1);
-  const rank=getRank(s.points||0);
+  const rank=getRank(displayRankValue(s));
   const nextRank=RANKS.find(r=>r.min>(s.points||0));
 
   document.getElementById('sp-name').textContent=`${s.first} ${s.last}`;
-  document.getElementById('sp-rank-badge').innerHTML=getRankBadgeHTML(s.points||0);
+  document.getElementById('sp-rank-badge').innerHTML=getRankBadgeHTML(displayRankValue(s));
   document.getElementById('sp-points').textContent=s.points||0;
   document.getElementById('sp-streak').textContent=`${s.streak||0} 🔥`;
   document.getElementById('sp-avg').textContent=`${avg} ⭐`;
@@ -1961,6 +2063,7 @@ async function redeemStudentReward(studentId, rewardId) {
   const log=[{ type:'redeem', pts:-r.cost, text:`${r.icon} Belohnung: ${r.name}`, date:today() }, ...(s.log||[])];
   const updates={};
   updates[`students/${studentId}/points`]=(s.points||0)-r.cost;
+  updates[`students/${studentId}/rankPoints`]=nextRankPoints(s, s.points||0); // Rang bleibt beim Ausgeben erhalten
   updates[`students/${studentId}/log`]=log;
   await fbUpdateRoot(updates);
   const logRef=fb().push(fb().ref(fb().db,'redeemLog'));
