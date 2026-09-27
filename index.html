@@ -436,7 +436,7 @@ header, .card, .profile-hero, .motiv-box {
   <div style="font-size:48px;">⭐</div>
   <div class="loading-text">HausaufgabenHeld</div>
   <div class="loading-spinner"></div>
-  <div class="loading-sub">Verbindung zu Firebase…</div>
+  <div class="loading-sub">Seite wird geladen…</div>
 </div>
 
 <!-- CONFIG WARNING -->
@@ -524,13 +524,13 @@ header, .card, .profile-hero, .motiv-box {
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
       <div>
         <div class="card-title" style="margin-bottom:2px;">🎓 Klassenerfolg heute</div>
-        <div class="text-muted">Ab 90% gibt es Klassenpunkte – Auszahlung nach 1 Stunde!</div>
+        <div class="text-muted">Ab <span id="class-threshold-display-1">90</span>% gibt es Klassenpunkte – Auszahlung nach 1 Stunde!</div>
       </div>
       <div id="class-pct-label" style="font-family:'Fredoka One',cursive;font-size:28px;color:var(--navy)">—</div>
     </div>
     <div class="class-meter-bar"><div class="class-meter-fill" id="class-meter-fill" style="width:0%"></div></div>
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-      <div class="threshold-marker">🎯 90%-Schwelle für +<span id="class-bonus-display">5</span> Klassenpunkte</div>
+      <div class="threshold-marker">🎯 <span id="class-threshold-display-2">90</span>%-Schwelle für +<span id="class-bonus-display">5</span> Klassenpunkte</div>
       <div id="class-bonus-status"></div>
     </div>
     <div id="timer-box-container"></div>
@@ -619,7 +619,7 @@ header, .card, .profile-hero, .motiv-box {
           <input type="number" class="form-input" id="setting-class-bonus" min="0" style="width:100px;" placeholder="5">
           <button class="btn btn-primary btn-sm" onclick="saveSetting('classBonus','setting-class-bonus',true)">Speichern</button>
         </div>
-        <div class="text-muted" style="margin-top:4px;">Klassenpunkte die die Klasse beim 90%-Bonus erhält</div>
+        <div class="text-muted" style="margin-top:4px;">Klassenpunkte die die Klasse beim Bonus erhält</div>
       </div>
 
       <div>
@@ -631,10 +631,17 @@ header, .card, .profile-hero, .motiv-box {
         <div class="text-muted" style="margin-top:4px;">Punkte die jeder Schüler beim Klassenbonus bekommt (Standard: 0)</div>
       </div>
 
+      <div>
+        <div class="form-label">🎯 Bonus-Schwelle (%)</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="number" class="form-input" id="setting-bonus-threshold" min="1" max="100" style="width:100px;" placeholder="90">
+          <button class="btn btn-primary btn-sm" onclick="saveSetting('classBonusThreshold','setting-bonus-threshold',true)">Speichern</button>
+        </div>
+        <div class="text-muted" style="margin-top:4px;">Ab wie viel % erledigter Hausaufgaben der Klassenbonus verfügbar wird (Standard: 90%)</div>
+      </div>
+
     </div>
   </div>
-
-  <!-- RÄNGE BEARBEITEN -->
   <div class="card mb-20">
     <div class="card-title">🏅 Ränge bearbeiten</div>
     <div class="text-muted mb-12">Ändere Name, Emoji, Farbe und Mindestpunktzahl jedes Rangs. Der höchste Rang gilt ab seiner Mindestpunktzahl unbegrenzt.</div>
@@ -877,6 +884,7 @@ let state = {
   classPointsTotal: 0,
   classBonus: 5,
   classStudentBonus: 0,   // Punkte pro Schüler beim Klassenbonus (Standard: 0 → jeder bekommt 0 extra)
+  classBonusThreshold: 90, // Prozent-Schwelle, ab der der Klassenbonus verfügbar wird (Standard: 90%)
   classBonusScheduled: {},
   classStreak: 0,
   redeemLog: [],
@@ -956,6 +964,7 @@ function startRealtimeListeners() {
     state.classPointsTotal    = m.classPointsTotal    || 0;
     state.classBonus          = m.classBonus          || 5;
     state.classStudentBonus   = m.classStudentBonus   !== undefined ? m.classStudentBonus : 0;
+    state.classBonusThreshold = m.classBonusThreshold || 90;
     state.classBonusScheduled = m.classBonusScheduled || {};
     state.classStreak         = m.classStreak         || 0;
     // Ränge aus Firebase laden falls vorhanden
@@ -1332,6 +1341,9 @@ function renderStats() {
 // ============================================================
 function updateClassMeter() {
   const d = document.getElementById('hw-date').value || today();
+  const threshold = state.classBonusThreshold || 90;
+  document.getElementById('class-threshold-display-1').textContent = threshold;
+  document.getElementById('class-threshold-display-2').textContent = threshold;
   const total = state.students.length;
   if (total === 0) { document.getElementById('class-pct-label').textContent = '0%'; document.getElementById('class-meter-fill').style.width = '0%'; return; }
 
@@ -1345,8 +1357,8 @@ function updateClassMeter() {
   const timerContainer = document.getElementById('timer-box-container');
   const awarded = state.classBonusScheduled[d]?.awarded;
 
-  if (pct >= 90 && !awarded) {
-    statusEl.innerHTML = `<button class="btn btn-primary btn-sm" onclick="awardClassBonus('${d}')">🎉 90% erreicht – Bonus jetzt auszahlen!</button>`;
+  if (pct >= threshold && !awarded) {
+    statusEl.innerHTML = `<button class="btn btn-primary btn-sm" onclick="awardClassBonus('${d}')">🎉 ${threshold}% erreicht – Bonus jetzt auszahlen!</button>`;
   } else if (awarded) {
     statusEl.innerHTML = `<span style="color:var(--green);font-weight:700;">✅ Klassenbonus heute bereits ausgezahlt!</span>`;
     document.getElementById('class-meter-fill').style.background = 'linear-gradient(90deg,#F5B700,#27AE60)';
@@ -1357,6 +1369,7 @@ function updateClassMeter() {
 }
 
 async function awardClassBonus(date) {
+  const threshold = state.classBonusThreshold || 90;
   const updates = {};
   const perStudent = state.classStudentBonus || 0;
   state.students.forEach(s => {
@@ -1365,8 +1378,8 @@ async function awardClassBonus(date) {
     updates[`students/${s.id}/rankPoints`] = nextRankPoints(s, newPts);
     const log = s.log || [];
     const logEntry = perStudent > 0
-      ? { type:'class', pts:perStudent, text:`Klassenbonus (90%+ Klasse) +${perStudent}`, date }
-      : { type:'class', pts:0, text:'Klassenbonus: Klasse hat 90% erreicht!', date };
+      ? { type:'class', pts:perStudent, text:`Klassenbonus (${threshold}%+ Klasse) +${perStudent}`, date }
+      : { type:'class', pts:0, text:`Klassenbonus: Klasse hat ${threshold}% erreicht!`, date };
     updates[`students/${s.id}/log`] = [logEntry, ...log];
   });
   updates['meta/classPointsTotal'] = state.classPointsTotal + state.classBonus;
@@ -1539,14 +1552,19 @@ function setToday() {
 function populateSettingInputs() {
   const cb = document.getElementById('setting-class-bonus');
   const sb = document.getElementById('setting-student-bonus');
+  const bt = document.getElementById('setting-bonus-threshold');
   if (cb) cb.value = state.classBonus;
   if (sb) sb.value = state.classStudentBonus !== undefined ? state.classStudentBonus : 0;
+  if (bt) bt.value = state.classBonusThreshold || 90;
 }
 
 async function saveSetting(metaKey, inputId, isNumber) {
   const val = document.getElementById(inputId).value;
-  const parsed = isNumber ? parseInt(val) : val;
+  let parsed = isNumber ? parseInt(val) : val;
   if (isNaN(parsed) && isNumber) { showToast('❗ Ungültiger Wert.', 'error'); return; }
+  if (metaKey === 'classBonusThreshold') {
+    if (parsed < 1 || parsed > 100) { showToast('❗ Bitte einen Wert zwischen 1 und 100 eingeben.', 'error'); return; }
+  }
   await fbUpdate('meta', { [metaKey]: parsed });
   showToast('✅ Einstellung gespeichert!', 'success');
 }
